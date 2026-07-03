@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bewertungsmatrix zur Partnerwahl</title>
+<meta name="description" content="Persönliches Reflexionswerkzeug zur Partnerwahl – Daten bleiben lokal im Browser." />
+<style>
+  html,body{margin:0;padding:0;background:#f6f4ef;}
+  *{box-sizing:border-box;}
+  #root{min-height:100vh;}
+</style>
+<!-- React + ReactDOM + Babel (Browser) über CDN, mit Fallback-CDN -->
+<script>
+  // Zeigt eine lesbare Meldung, falls die Skripte nicht geladen werden konnten
+  window.__libError = function(name){
+    var r = document.getElementById("root");
+    if(r){ r.innerHTML = '<div style="max-width:640px;margin:60px auto;padding:24px;font-family:sans-serif;color:#5c574f;background:#fff;border:1px solid #eee8dd;border-radius:14px;line-height:1.6">'
+      + '<h2 style="color:#b0392b;margin-top:0">Bibliothek konnte nicht geladen werden ('+name+')</h2>'
+      + '<p>Die Seite braucht beim ersten Öffnen eine Internetverbindung, um React &amp; Babel von einem CDN zu laden. Mögliche Ursachen:</p>'
+      + '<ul><li>Keine Internetverbindung.</li><li>Ein Ad-/Script-Blocker (z. B. uBlock) blockiert <code>unpkg.com</code> oder <code>jsdelivr.net</code> – dann bitte für diese Seite deaktivieren.</li><li>Firmen-/Schulnetzwerk blockiert CDNs.</li></ul>'
+      + '<p>Danach die Seite neu laden.</p></div>';
+    }
+  };
+</script>
+<script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+  onerror="this.onerror=null;var s=document.createElement('script');s.crossOrigin='anonymous';s.src='https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js';s.onerror=function(){window.__libError('React')};document.head.appendChild(s);"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+  onerror="this.onerror=null;var s=document.createElement('script');s.crossOrigin='anonymous';s.src='https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js';s.onerror=function(){window.__libError('ReactDOM')};document.head.appendChild(s);"></script>
+<script src="https://unpkg.com/@babel/standalone@7.25.6/babel.min.js"
+  onerror="this.onerror=null;var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@babel/standalone@7.25.6/babel.min.js';s.onerror=function(){window.__libError('Babel')};document.head.appendChild(s);"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/plain" id="app-source">
+
+const { useState, useEffect } = React;
+
+const TRANS = {"CAT": {"din_m": {"name": {"de": "Religion & Dīn", "en": "Religion & Dīn", "nl": "Religie & Dīn"}, "short": {"de": "Dīn", "en": "Dīn", "nl": "Dīn"}, "note": {"de": "Bei einer muslimischen Partnerin: gelebter Glaube und Charakter – das Fundament, das laut Prophet ﷺ bei der Partnerwahl den Ausschlag geben soll.", "en": "For a Muslim partner: lived faith and character – the foundation the Prophet ﷺ named as decisive in choosing a spouse.", "nl": "Bij een moslimpartner: geleefd geloof en karakter – het fundament dat volgens de Profeet ﷺ doorslaggevend is bij partnerkeuze."}}, "din_nm": {"name": {"de": "Islam-Kompatibilität", "en": "Islam Compatibility", "nl": "Islam-compatibiliteit"}, "short": {"de": "Islam-Komp.", "en": "Islam comp.", "nl": "Islam-comp."}, "note": {"de": "Bei einer nicht-muslimischen Partnerin verschiebt sich die Frage von ‚praktiziert sie‘ zu ‚ist ein gemeinsames Leben mit dem Islam als Fundament tragfähig‘. Das strahlt auf Erziehung, Alltag, Feste und Familie aus – deshalb hier ausführlich.", "en": "For a non-Muslim partner the question shifts from ‘does she practice’ to ‘can a shared life with Islam as its foundation work’. This affects parenting, daily life, holidays and family – hence the detail here.", "nl": "Bij een niet-moslimpartner verschuift de vraag van ‘praktiseert zij’ naar ‘is een gedeeld leven met de islam als fundament haalbaar’. Dit werkt door in opvoeding, dagelijks leven, feesten en familie – vandaar de uitgebreidheid."}}, "islamwissen": {"name": {"de": "Islamisches Wissen & Weiterbildung", "en": "Islamic Knowledge & Growth", "nl": "Islamitische Kennis & Ontwikkeling"}, "short": {"de": "Islam-Wissen", "en": "Islamic knowl.", "nl": "Islamkennis"}, "note": {"de": "Nur bei einer Muslima: aktueller Wissensstand UND – oft wichtiger – die Richtung: will sie wachsen und tut sie konkret etwas dafür?", "en": "Only for a Muslim woman: current knowledge AND – often more important – the direction: does she want to grow and act on it?", "nl": "Alleen bij een moslima: huidige kennis ÉN – vaak belangrijker – de richting: wil zij groeien en doet zij daar iets voor?"}}, "reife": {"name": {"de": "Reife, Ruhe & Selbstverantwortung", "en": "Maturity, Calm & Responsibility", "nl": "Rijpheid, Rust & Eigen Verantwoordelijkheid"}, "short": {"de": "Reife", "en": "Maturity", "nl": "Rijpheid"}, "note": {"de": "‚Peace over drama.‘ Kann sie ihr Leben verantworten, Stress erwachsen handhaben, reflektiert sie sich selbst? Der rote Faden durch fast alle deine Punkte.", "en": "‘Peace over drama.’ Can she own her life, handle stress like an adult, reflect on herself? The thread running through almost all your points.", "nl": "‘Peace over drama.’ Kan zij haar leven dragen, stress volwassen aan, reflecteert zij op zichzelf? De rode draad door bijna al je punten."}}, "konflikt": {"name": {"de": "Konflikt & Kommunikation", "en": "Conflict & Communication", "nl": "Conflict & Communicatie"}, "short": {"de": "Konflikt", "en": "Conflict", "nl": "Conflict"}, "note": {"de": "Stärkster empirischer Prädiktor für Beziehungsstabilität – wie ihr streitet und euch versöhnt.", "en": "The strongest empirical predictor of relationship stability – how you argue and reconcile.", "nl": "De sterkste empirische voorspeller van relatiestabiliteit – hoe jullie ruziën en het weer goedmaken."}}, "vertrauen": {"name": {"de": "Vertrauen, Loyalität & Vergangenheit", "en": "Trust, Loyalty & Past", "nl": "Vertrouwen, Loyaliteit & Verleden"}, "short": {"de": "Vertrauen", "en": "Trust", "nl": "Vertrouwen"}, "note": {"de": "Loyalität, Verlässlichkeit und eine stabile Beziehungsvergangenheit. Statt einer Rohzahl zählt das Muster: ehrlich, treu, ‚low mileage, no chaos trail‘.", "en": "Loyalty, reliability and a stable relationship history. Not a raw number but the pattern: honest, faithful, ‘low mileage, no chaos trail’.", "nl": "Loyaliteit, betrouwbaarheid en een stabiel relatieverleden. Niet een ruw getal maar het patroon: eerlijk, trouw, ‘low mileage, no chaos trail’."}}, "erwartung": {"name": {"de": "Erwartungen an Ehe & Zukunft", "en": "Expectations of Marriage & Future", "nl": "Verwachtingen van Huwelijk & Toekomst"}, "short": {"de": "Ehe & Zukunft", "en": "Marriage & future", "nl": "Huwelijk & toekomst"}, "note": {"de": "Deckungsgleichheit bei Vorstellungen von Ehe, Rollen, Prioritäten und Lebensplänen – hier entstehen sonst die stillen Dauerkonflikte.", "en": "Alignment on views of marriage, roles, priorities and life plans – otherwise the quiet, lasting conflicts start here.", "nl": "Overeenstemming over huwelijk, rollen, prioriteiten en levensplannen – anders ontstaan hier de stille, blijvende conflicten."}}, "haushalt": {"name": {"de": "Haushalt, Kochen & Alltag", "en": "Household, Cooking & Daily Life", "nl": "Huishouden, Koken & Dagelijks Leven"}, "short": {"de": "Haushalt", "en": "Household", "nl": "Huishouden"}, "note": {"de": "Alltagsteilung, Kochen und häusliche Zusammenarbeit – praktisch, aber ein häufiger Reibungspunkt.", "en": "Sharing chores, cooking and running a home together – practical, but a common friction point.", "nl": "Taakverdeling, koken en samen een huishouden runnen – praktisch, maar een veelvoorkomend wrijvingspunt."}}, "geld": {"name": {"de": "Umgang mit Geld", "en": "Handling Money", "nl": "Omgang met Geld"}, "short": {"de": "Geld", "en": "Money", "nl": "Geld"}, "note": {"de": "Finanzstreit ist eine der häufigsten Scheidungsursachen. Wichtig auch: redet sie nicht alle 5 Minuten über Geld / Materielles.", "en": "Money conflict is among the most common causes of divorce. Also key: she isn’t talking about money/status every 5 minutes.", "nl": "Geldconflict is een van de meest voorkomende scheidingsoorzaken. Ook belangrijk: praat zij niet om de 5 minuten over geld/materie."}}, "familie": {"name": {"de": "Familienbindung (Vater & Mutter)", "en": "Family Bonds (Father & Mother)", "nl": "Familieband (Vader & Moeder)"}, "short": {"de": "Familie", "en": "Family", "nl": "Familie"}, "note": {"de": "Das Verhältnis zu den Eltern verrät viel über ihr Beziehungsmuster und ihre Bindungsfähigkeit.", "en": "Her relationship with her parents reveals much about her relational patterns and capacity to bond.", "nl": "Haar band met haar ouders zegt veel over haar relatiepatronen en hechtingsvermogen."}}, "freunde": {"name": {"de": "Freundeskreis & Charakter nach außen", "en": "Friends & Outward Character", "nl": "Vriendenkring & Karakter naar Buiten"}, "short": {"de": "Freunde", "en": "Friends", "nl": "Vrienden"}, "note": {"de": "Wer sie umgibt und wie sie Menschen behandelt, die ihr nichts ‚nützen‘ – ein ehrliches Charaktersignal. Auch: Respekt anderer Frauen ihr gegenüber.", "en": "Who surrounds her and how she treats people who can’t ‘benefit’ her – an honest signal of character. Also: whether other women respect her.", "nl": "Wie haar omringt en hoe zij mensen behandelt die haar niets ‘opleveren’ – een eerlijk signaal van karakter. Ook: of andere vrouwen haar respecteren."}}, "mutter": {"name": {"de": "Eignung als Mutter", "en": "Suitability as a Mother", "nl": "Geschiktheid als Moeder"}, "short": {"de": "Mutter", "en": "Mother", "nl": "Moeder"}, "note": {"de": "Falls Kinder gewünscht sind: Anzeichen für Geduld, Fürsorge und Wertevermittlung.", "en": "If children are wanted: signs of patience, care and passing on values.", "nl": "Als er kinderen gewenst zijn: tekenen van geduld, zorg en het doorgeven van waarden."}}, "bildung": {"name": {"de": "Bildung & Weiterentwicklung", "en": "Education & Growth", "nl": "Opleiding & Ontwikkeling"}, "short": {"de": "Bildung", "en": "Education", "nl": "Opleiding"}, "note": {"de": "Präferenz: ähnliches Niveau (du bist Master-Absolvent) – z. B. Ärztin, Pharmazeutin, Zahnärztin, Chemikerin. Kein Muss, wenn sie anders herausragt; entscheidend ist, dass sie sich weiterbildet.", "en": "Preference: a similar level (you hold a master’s) – e.g. doctor, pharmacist, dentist, chemist. Not a must if she excels elsewhere; what matters is that she keeps growing.", "nl": "Voorkeur: een vergelijkbaar niveau (jij hebt een master) – bijv. arts, apotheker, tandarts, chemicus. Geen must als zij elders uitblinkt; belangrijk is dat zij zich blijft ontwikkelen."}}, "anziehung": {"name": {"de": "Anziehung & Attraktivität", "en": "Attraction & Looks", "nl": "Aantrekking & Uiterlijk"}, "short": {"de": "Anziehung", "en": "Attraction", "nl": "Aantrekking"}, "note": {"de": "Attraktivität getrennt nach Gesicht und Körper, plus deine persönlichen Vorlieben als flexible ‚passt-zu-mir‘-Skalen. Zählt real, wird langfristig aber überschätzt – als Basis, nicht als alleiniger Maßstab.", "en": "Attractiveness split into face and body, plus your personal preferences as flexible ‘fits-me’ scales. It counts, but is overrated long-term – a basis, not the sole measure.", "nl": "Aantrekkelijkheid gesplitst in gezicht en lichaam, plus jouw voorkeuren als flexibele ‘past-bij-mij’-schalen. Telt echt, maar wordt op lange termijn overschat – een basis, niet de enige maatstaf."}}, "aktiv": {"name": {"de": "Aktivität, Sport & Hobbys", "en": "Activity, Sport & Hobbies", "nl": "Activiteit, Sport & Hobby's"}, "short": {"de": "Aktivität", "en": "Activity", "nl": "Activiteit"}, "note": {"de": "Sportlichkeit/Ambition und geteilte Aktivität (Natur, Spazieren, eigene Hobbys) – ein guter Prädiktor für gemeinsame Zeit und Lebensstil.", "en": "Fitness/ambition and shared activity (nature, walks, her own hobbies) – a good predictor of shared time and lifestyle.", "nl": "Sportiviteit/ambitie en gedeelde activiteit (natuur, wandelen, eigen hobby's) – een goede voorspeller van gedeelde tijd en levensstijl."}}, "auftreten": {"name": {"de": "Kleidung, Auftreten & Pflege", "en": "Dress, Appearance & Grooming", "nl": "Kleding, Uitstraling & Verzorging"}, "short": {"de": "Auftreten", "en": "Appearance", "nl": "Uitstraling"}, "note": {"de": "Kleidungsstil, Bescheidenheit und Pflege – als ‚passt zu deinen Vorstellungen‘, nicht als ‚viel = schlecht‘. Ausgaben sind Präferenz, keine objektive Schwäche.", "en": "Dress style, modesty and grooming – framed as ‘fits your preferences’, not ‘more = worse’. Spending is a preference, not an objective flaw.", "nl": "Kledingstijl, bescheidenheid en verzorging – als ‘past bij jouw voorkeuren’, niet ‘meer = slechter’. Uitgaven zijn een voorkeur, geen objectieve zwakte."}}, "lebensstil": {"name": {"de": "Hochzeit & Lebensstil-Vorstellungen", "en": "Wedding & Lifestyle Views", "nl": "Bruiloft & Levensstijl-ideeën"}, "short": {"de": "Lebensstil", "en": "Lifestyle", "nl": "Levensstijl"}, "note": {"de": "Übereinstimmung bei Hochzeit, Reisen und Prioritäten – Erlebnisse vs. Statusausgaben. Geht es vor allem um Passung mit deinen Vorstellungen.", "en": "Alignment on wedding, travel and priorities – experiences vs. status spending. Mainly about fit with your views.", "nl": "Overeenstemming over bruiloft, reizen en prioriteiten – ervaringen vs. statusuitgaven. Vooral over de match met jouw ideeën."}}, "standort": {"name": {"de": "Standort & Wohnort", "en": "Location & Residence", "nl": "Locatie & Woonplaats"}, "short": {"de": "Standort", "en": "Location", "nl": "Locatie"}, "note": {"de": "Wo will sie leben – häufiger stiller Dealbreaker.", "en": "Where she wants to live – a common silent deal-breaker.", "nl": "Waar zij wil wonen – een veelvoorkomende stille dealbreaker."}}, "schwieger": {"name": {"de": "Umgang mit Schwiegerfamilie", "en": "Relations with In-laws", "nl": "Omgang met Schoonfamilie"}, "short": {"de": "Schwieger", "en": "In-laws", "nl": "Schoonfamilie"}, "note": {"de": "Wie steht sie zu deinen Eltern & welche Nähe/Verpflichtung stellt sie sich vor – im islamischen Kontext oft sehr relevant.", "en": "How she relates to your parents and what closeness/obligation she envisions – often highly relevant in an Islamic context.", "nl": "Hoe zij tegenover jouw ouders staat en welke nabijheid/verplichting zij voor zich ziet – in een islamitische context vaak zeer relevant."}}, "gesundheit": {"name": {"de": "Gesundheit & Gewohnheiten", "en": "Health & Habits", "nl": "Gezondheid & Gewoonten"}, "short": {"de": "Gesundheit", "en": "Health", "nl": "Gezondheid"}, "note": {"de": "Rauchen, Sport, Ernährung & Lebensgewohnheiten, soweit dir wichtig.", "en": "Smoking, exercise, diet and lifestyle habits, as far as they matter to you.", "nl": "Roken, sport, voeding en leefgewoonten, voor zover belangrijk voor jou."}}, "kinderplan": {"name": {"de": "Kinderzahl & Timing", "en": "Number of Children & Timing", "nl": "Aantal Kinderen & Timing"}, "short": {"de": "Kinderplan", "en": "Children plan", "nl": "Kinderplan"}, "note": {"de": "Konkrete Übereinstimmung bei Anzahl und Zeitpunkt – über den groben Deal-Breaker hinaus.", "en": "Concrete alignment on number and timing – beyond the rough deal-breaker.", "nl": "Concrete overeenstemming over aantal en timing – verder dan de globale dealbreaker."}}}, "Q": {"din_praxis": {"en": "How seriously does she live her faith day to day (prayer, awareness)?", "nl": "Hoe serieus beleeft zij haar geloof dagelijks (gebed, bewustzijn)?", "de": "Wie ernsthaft lebt sie ihren Glauben im Alltag (Gebet, Bewusstsein)?", "type": "scale"}, "din_achlaq": {"en": "How strongly does good character (Achlāq) show: honesty, kindness, patience?", "nl": "Hoe sterk toont goed karakter (Achlāq): eerlijkheid, vriendelijkheid, geduld?", "de": "Wie stark zeigt sich guter Charakter (Achlāq): Ehrlichkeit, Güte, Geduld?", "type": "scale"}, "din_erziehung": {"en": "Does her view on the children’s religious upbringing match yours?", "nl": "Komt haar visie op de religieuze opvoeding van de kinderen overeen met de jouwe?", "de": "Deckt sich ihre Vorstellung zur religiösen Erziehung der Kinder mit deiner?", "type": "yesno"}, "din_auslegung": {"en": "Do her interpretation and daily practice (understanding, strictness) fit yours?", "nl": "Passen haar interpretatie en dagelijkse praktijk (begrip, striktheid) bij de jouwe?", "de": "Passt ihre Auslegung & Alltagspraxis (Verständnis, Strenge) zu deiner?", "type": "yesno"}, "din_wachstum": {"en": "Is she growing religiously (rather than standing still)?", "nl": "Groeit zij religieus (in plaats van stil te staan)?", "de": "Wächst sie religiös weiter (statt Stillstand)?", "type": "yesno"}, "in_kinder": {"en": "Does she clearly support an Islamic upbringing of the children (the central point)?", "nl": "Steunt zij duidelijk een islamitische opvoeding van de kinderen (het centrale punt)?", "de": "Trägt sie eine islamische Erziehung der Kinder klar mit (der zentrale Punkt)?", "type": "yesno"}, "in_praxis": {"en": "Does she respect & support your practice (prayer, Ramadan, mosque, halal)?", "nl": "Respecteert & steunt zij jouw praktijk (gebed, Ramadan, moskee, halal)?", "de": "Respektiert & unterstützt sie deine Praxis (Gebet, Ramadan, Moschee, Halal)?", "type": "yesno"}, "in_alltag": {"en": "Is she fine with Islamic daily life (no alcohol/pork at home, halal household)?", "nl": "Is zij akkoord met islamitisch dagelijks leven (geen alcohol/varkensvlees thuis, halal huishouden)?", "de": "Ist sie mit islamischem Alltag einverstanden (kein Alkohol/Schwein im Haus, halal-Haushalt)?", "type": "yesno"}, "in_feste": {"en": "How well can the handling of holidays be settled (Eid vs. e.g. Christmas) – without constant conflict?", "nl": "Hoe goed is de omgang met feesten te regelen (Eid vs. bijv. Kerst) – zonder voortdurend conflict?", "de": "Wie gut lässt sich der Umgang mit Festen klären (Eid vs. z. B. Weihnachten) – ohne Dauerkonflikt?", "type": "scale"}, "in_reaktion": {"en": "How does she react when faith topics get concrete – open & respectful or defensive?", "nl": "Hoe reageert zij als geloofsonderwerpen concreet worden – open & respectvol of afwerend?", "de": "Wie reagiert sie, wenn Glaubensthemen konkret werden – offen & respektvoll oder abwehrend?", "type": "scale"}, "in_offen": {"en": "How open is she toward Islam for herself too (without you pressuring)?", "nl": "Hoe open staat zij ook voor zichzelf tegenover de islam (zonder dat jij druk uitoefent)?", "de": "Wie offen ist sie gegenüber dem Islam auch für sich selbst (ohne dass du Druck machst)?", "type": "scale"}, "in_familie": {"en": "Is her family/environment at peace with the arrangement (less outside pressure)?", "nl": "Is haar familie/omgeving op zijn gemak met de situatie (minder druk van buitenaf)?", "de": "Ist ihre Familie/Umfeld mit der Konstellation im Reinen (weniger Druck von außen)?", "type": "yesno"}, "r_verantwortung": {"en": "Does she take responsibility for her own life (job, finances, decisions)?", "nl": "Neemt zij verantwoordelijkheid voor haar eigen leven (werk, financiën, beslissingen)?", "de": "Übernimmt sie Verantwortung für ihr eigenes Leben (Job, Finanzen, Entscheidungen)?", "type": "scale"}, "r_stress": {"en": "Does she handle stress like an adult (rather than drama/escalation)?", "nl": "Gaat zij volwassen met stress om (in plaats van drama/escalatie)?", "de": "Handhabt sie Stress erwachsen (statt Drama/Eskalation)?", "type": "scale"}, "r_reflexion": {"en": "Does she reflect on herself (can see and place her own mistakes)?", "nl": "Reflecteert zij op zichzelf (kan eigen fouten zien en plaatsen)?", "de": "Reflektiert sie sich selbst (kann eigene Fehler sehen & einordnen)?", "type": "scale"}, "r_impuls": {"en": "How low is her impulsivity (considered rather than erratic)?", "nl": "Hoe laag is haar impulsiviteit (overwogen in plaats van grillig)?", "de": "Wie niedrig ist ihre Impulsivität (überlegt statt sprunghaft)?", "type": "scale"}, "r_peace": {"en": "Do you feel calm and ‘easy’ in her presence (no sense of tension)?", "nl": "Voel je je rustig en ‘easy’ in haar aanwezigheid (geen gevoel van spanning)?", "de": "Fühlst du dich in ihrer Anwesenheit ruhig & ‚easy‘ (kein Anspannungsgefühl)?", "type": "yesno"}, "k_verachtung": {"en": "Does she stay respectful in conflict (no contempt, no belittling)?", "nl": "Blijft zij respectvol in conflict (geen minachting, geen kleineren)?", "de": "Bleibt sie im Streit respektvoll (keine Verachtung, kein Herabsetzen)?", "type": "yesno"}, "k_reparatur": {"en": "How well does she come back to you after an argument?", "nl": "Hoe goed komt zij na een ruzie weer naar je toe?", "de": "Wie gut geht sie nach einem Streit wieder auf dich zu?", "type": "scale"}, "k_zuhoeren": {"en": "How well does she listen and empathize with you?", "nl": "Hoe goed luistert zij en leeft zij zich in jou in?", "de": "Wie gut hört sie zu und fühlt sich in dich ein?", "type": "scale"}, "k_positiv": {"en": "Does a positive, warm baseline prevail day to day?", "nl": "Overheerst een positieve, warme grondhouding in het dagelijks leven?", "de": "Überwiegt im Alltag eine positive, warme Grundhaltung?", "type": "scale"}, "v_ehrlich": {"en": "How honest & reliable is she day to day?", "nl": "Hoe eerlijk & betrouwbaar is zij dagelijks?", "de": "Wie ehrlich & verlässlich ist sie im Alltag?", "type": "scale"}, "v_loyal": {"en": "How loyal is she (stands by you even when you’re not there)?", "nl": "Hoe loyaal is zij (staat achter je, ook als je er niet bij bent)?", "de": "Wie loyal ist sie (steht zu dir, auch wenn du nicht dabei bist)?", "type": "scale"}, "v_vergangenheit": {"en": "Is she open & unbothered about her past (rather than hiding it)?", "nl": "Is zij open & onbevangen over haar verleden (in plaats van het te verbergen)?", "de": "Geht sie offen & unaufgeregt mit ihrer Vergangenheit um (statt zu verbergen)?", "type": "yesno"}, "v_stabil": {"en": "How stable was her relationship history (few, resolved rather than many chaotic ones)?", "nl": "Hoe stabiel was haar relatieverleden (weinig, afgeronde in plaats van veel chaotische)?", "de": "Wie stabil war ihre Beziehungsvergangenheit (wenige, geklärte statt vieler chaotischer Situationen)?", "type": "scale"}, "v_treue": {"en": "How seriously does she mean fidelity & commitment from now on?", "nl": "Hoe serieus meent zij trouw & toewijding vanaf nu?", "de": "Wie ernst meint sie Treue & Bindung ab jetzt?", "type": "scale"}, "e_ehebild": {"en": "Does her picture of marriage (roles, closeness, commitment) fit yours?", "nl": "Past haar beeld van het huwelijk (rollen, nabijheid, toewijding) bij het jouwe?", "de": "Passt ihr Bild von Ehe (Rollen, Nähe, Verbindlichkeit) zu deinem?", "type": "scale"}, "e_zukunft": {"en": "Do her future plans & priorities fit yours (place, career, family)?", "nl": "Passen haar toekomstplannen & prioriteiten bij de jouwe (plaats, carrière, gezin)?", "de": "Passen ihre Zukunftspläne & Prioritäten zu deinen (Ort, Karriere, Familie)?", "type": "scale"}, "e_prioritaet": {"en": "Does she set family & marriage as a real priority (not just on the side)?", "nl": "Stelt zij gezin & huwelijk als echte prioriteit (niet slechts terzijde)?", "de": "Setzt sie Familie & Ehe als echte Priorität (nicht nur nebenbei)?", "type": "yesno"}, "h_teilung": {"en": "How fairly & smoothly could you imagine dividing chores/tasks?", "nl": "Hoe eerlijk & soepel zou je je de verdeling van huishouden/taken kunnen voorstellen?", "de": "Wie fair & unkompliziert teilt ihr euch Haushalt/Aufgaben vorstellbar auf?", "type": "scale"}, "h_kochen": {"en": "How does she feel about cooking & caring for the household?", "nl": "Hoe staat zij tegenover koken & het verzorgen van het huishouden?", "de": "Wie steht sie zu Kochen & Versorgung des Haushalts?", "type": "scale"}, "h_zusammen": {"en": "Does she pull as a team day to day (rather than dumping it all on one)?", "nl": "Trekt zij als een team in het dagelijks leven (in plaats van alles op één af te schuiven)?", "de": "Zieht sie im Alltag als Team mit (statt alles auf einen abzuwälzen)?", "type": "yesno"}, "g_verantwortung": {"en": "How responsibly does she handle money (no impulsive spending)?", "nl": "Hoe verantwoord gaat zij met geld om (geen impulsieve uitgaven)?", "de": "Wie verantwortungsvoll geht sie mit Geld um (kein impulsives Ausgeben)?", "type": "scale"}, "g_schulden": {"en": "Is she financially honest & free of problematic debt?", "nl": "Is zij financieel eerlijk & vrij van problematische schulden?", "de": "Ist sie finanziell ehrlich & frei von problematischen Schulden?", "type": "yesno"}, "g_material": {"en": "How little does her thinking constantly revolve around money/status (not a constant topic)?", "nl": "Hoe weinig draait haar denken voortdurend om geld/status (geen constant onderwerp)?", "de": "Wie wenig dreht sich ihr Denken ständig um Geld/Status (kein Dauerthema)?", "type": "scale"}, "g_passung": {"en": "Do your attitudes to money & responsibility fit together?", "nl": "Passen jullie houdingen tegenover geld & verantwoordelijkheid samen?", "de": "Passt eure Einstellung zu Geld & Verantwortung zusammen?", "type": "yesno"}, "f_vater": {"en": "How healthy is her bond with her father?", "nl": "Hoe gezond is haar band met haar vader?", "de": "Wie gesund ist ihre Bindung zum Vater?", "type": "scale"}, "f_mutter": {"en": "How healthy is her bond with her mother?", "nl": "Hoe gezond is haar band met haar moeder?", "de": "Wie gesund ist ihre Bindung zur Mutter?", "type": "scale"}, "f_grenzen": {"en": "Does she have healthy boundaries with her family of origin (neither rupture nor dependence)?", "nl": "Heeft zij gezonde grenzen met haar familie van herkomst (noch breuk noch afhankelijkheid)?", "de": "Hat sie gesunde Grenzen zur Herkunftsfamilie (weder Bruch noch Abhängigkeit)?", "type": "yesno"}, "fr_qualitaet": {"en": "How good is her circle of friends (loyal, stable, good influence)?", "nl": "Hoe goed is haar vriendenkring (loyaal, stabiel, goede invloed)?", "de": "Wie gut ist ihr Freundeskreis (loyal, stabil, guter Einfluss)?", "type": "scale"}, "fr_bindung": {"en": "How reliable & deep are her friendships (rather than shallow/fickle)?", "nl": "Hoe betrouwbaar & diep zijn haar vriendschappen (in plaats van oppervlakkig/wispelturig)?", "de": "Wie verlässlich & tief sind ihre Freundschaften (statt oberflächlich/wechselhaft)?", "type": "scale"}, "fr_kindness": {"en": "How kind is she to people who can’t benefit her (waiters, strangers)?", "nl": "Hoe vriendelijk is zij tegen mensen die haar niets opleveren (obers, vreemden)?", "de": "Wie freundlich ist sie zu Menschen, die ihr nichts nützen (Kellner, Fremde)?", "type": "scale"}, "fr_respekt": {"en": "Is she respected by other women?", "nl": "Wordt zij door andere vrouwen gerespecteerd?", "de": "Wird sie von anderen Frauen respektiert?", "type": "yesno"}, "mu_geduld": {"en": "How patient & caring is she?", "nl": "Hoe geduldig & zorgzaam is zij?", "de": "Wie geduldig & fürsorglich ist sie?", "type": "scale"}, "mu_werte": {"en": "Do her views on upbringing & values fit yours?", "nl": "Passen haar ideeën over opvoeding & waarden bij de jouwe?", "de": "Passen ihre Vorstellungen zu Erziehung & Werten zu deinen?", "type": "scale"}, "mu_reife": {"en": "How maturely does she deal with strain & responsibility?", "nl": "Hoe volwassen gaat zij om met belasting & verantwoordelijkheid?", "de": "Wie reif geht sie mit Belastung & Verantwortung um?", "type": "scale"}, "b_niveau": {"en": "How close is her education/career level to yours (master’s/academic)?", "nl": "Hoe dicht ligt haar opleidings-/carrièreniveau bij het jouwe (master/academisch)?", "de": "Wie nah ist ihr Bildungs-/Berufsniveau an deinem (Master/akademisch)?", "type": "scale"}, "b_wachstum": {"en": "Does she actively keep learning / have ambition?", "nl": "Blijft zij actief leren / heeft zij ambitie?", "de": "Bildet sie sich aktiv weiter / hat Ambition?", "type": "scale"}, "b_anders": {"en": "If formally lower: does she clearly excel otherwise (smarts, skill)?", "nl": "Als formeel lager: blinkt zij duidelijk elders uit (slimheid, kunde)?", "de": "Falls formal niedriger: Sticht sie anderweitig klar heraus (Klugheit, Können)?", "type": "yesno"}, "a_gesicht": {"en": "How attractive do you find her face?", "nl": "Hoe aantrekkelijk vind je haar gezicht?", "de": "Wie attraktiv findest du ihr Gesicht?", "type": "scale"}, "a_koerper": {"en": "How attractive do you find her body overall?", "nl": "Hoe aantrekkelijk vind je haar lichaam in het geheel?", "de": "Wie attraktiv findest du ihren Körper insgesamt?", "type": "scale"}, "a_taille": {"en": "How well does her figure/waist fit your preference?", "nl": "Hoe goed past haar figuur/taille bij jouw voorkeur?", "de": "Wie sehr passt ihre Figur/Taille zu deiner Vorliebe?", "type": "scale"}, "a_oberweite": {"en": "How well does her bust fit your preference?", "nl": "Hoe goed past haar boezem bij jouw voorkeur?", "de": "Wie sehr passt ihre Oberweite zu deiner Vorliebe?", "type": "scale"}, "a_gesamt": {"en": "How strongly are you drawn to her overall (overall attraction)?", "nl": "Hoe sterk voel je je in het geheel tot haar aangetrokken (totale aantrekking)?", "de": "Wie stark zieht es dich insgesamt zu ihr (Gesamt-Anziehung)?", "type": "scale"}, "a_emotion": {"en": "How strong is the emotional connection & tenderness?", "nl": "Hoe sterk is de emotionele verbondenheid & tederheid?", "de": "Wie stark ist die emotionale Verbundenheit & Zärtlichkeit?", "type": "scale"}, "a_lachen": {"en": "How much shared laughter & lightness is there?", "nl": "Hoeveel gedeelde lach & lichtheid is er?", "de": "Wie viel gemeinsames Lachen & Leichtigkeit gibt es?", "type": "scale"}, "ak_sport": {"en": "How physically active is she – or at least has the ambition to be?", "nl": "Hoe lichamelijk actief is zij – of heeft zij er tenminste de ambitie toe?", "de": "Wie sportlich aktiv ist sie – oder hat zumindest die Ambition dazu?", "type": "scale"}, "ak_natur": {"en": "Does she like getting out into nature / going for walks?", "nl": "Houdt zij ervan de natuur in te gaan / te wandelen?", "de": "Geht sie gern raus in die Natur / spazieren?", "type": "scale"}, "ak_hobbys": {"en": "Does she have her own hobbies & interests?", "nl": "Heeft zij eigen hobby's & interesses?", "de": "Hat sie eigene Hobbys & Interessen?", "type": "scale"}, "ak_passung": {"en": "Do your activity levels & lifestyle fit together?", "nl": "Passen jullie activiteitsniveaus & levensstijl samen?", "de": "Passt euer Aktivitätslevel & Lebensstil zusammen?", "type": "yesno"}, "au_stil": {"en": "Does she dress well & in line with your preferences?", "nl": "Kleedt zij zich goed & in lijn met jouw voorkeuren?", "de": "Kleidet sie sich gut & passend zu deinen Vorstellungen?", "type": "scale"}, "au_bescheiden": {"en": "Does she dress modestly / cover as you’d prefer (e.g. hijab)?", "nl": "Kleedt zij zich bescheiden / bedekt zij zich zoals jij verkiest (bijv. hijab)?", "de": "Verdeckt sie ihre Reize / kleidet sich bescheiden (nach deiner Vorstellung, z. B. Hijab)?", "type": "scale"}, "au_schminke": {"en": "Does her use of makeup fit your preference (not too much / not too little)?", "nl": "Past haar gebruik van make-up bij jouw voorkeur (niet te veel / niet te weinig)?", "de": "Passt ihr Umgang mit Schminke zu deiner Vorliebe (nicht zu viel / nicht zu wenig)?", "type": "scale"}, "au_ausgaben": {"en": "Does her monthly spending on grooming (manicure, cosmetics) fit your view?", "nl": "Past haar maandelijkse uitgave aan verzorging (manicure, cosmetica) bij jouw idee?", "de": "Passt ihr monatliches Ausgabenniveau für Pflege (Maniküre, Kosmetik) zu deiner Vorstellung?", "type": "scale"}, "l_hochzeit": {"en": "Does her idea of the wedding (big vs. small) fit yours?", "nl": "Past haar idee van de bruiloft (groot vs. klein) bij het jouwe?", "de": "Passt ihre Vorstellung von der Hochzeit (groß vs. klein) zu deiner?", "type": "scale"}, "l_reisen": {"en": "Does she share your love of travel & experiences?", "nl": "Deelt zij jouw liefde voor reizen & ervaringen?", "de": "Teilt sie deine Vorliebe fürs Reisen & Erleben?", "type": "scale"}, "l_prioritaet": {"en": "Does she prefer experiences/travel (e.g. a longer honeymoon) over costly status spending (apartment, luxury)?", "nl": "Verkiest zij ervaringen/reizen (bijv. een langere huwelijksreis) boven dure statusuitgaven (woning, luxe)?", "de": "Bevorzugt sie Erlebnisse/Reisen (z. B. längere Flitterwochen) statt teurer Statusausgaben (Wohnung, Luxus)?", "type": "yesno"}, "l_finanzstil": {"en": "Does her general spending/saving style fit yours?", "nl": "Past haar algemene uitgeef-/spaarstijl bij de jouwe?", "de": "Passt ihr allgemeiner Ausgaben-/Sparstil zu deinem?", "type": "scale"}, "s_ort": {"en": "Does she want to live where you live / want to live?", "nl": "Wil zij wonen waar jij woont / wilt wonen?", "de": "Will sie dort leben, wo du lebst / leben willst?", "type": "yesno"}, "s_familie": {"en": "How well does her idea of closeness to her own family fit yours?", "nl": "Hoe goed past haar idee van nabijheid tot haar eigen familie bij het jouwe?", "de": "Wie gut passt ihre Nähe-Vorstellung zur eigenen Familie mit deiner?", "type": "scale"}, "s_flexibel": {"en": "How flexible/willing to compromise is she about location?", "nl": "Hoe flexibel/bereid tot compromis is zij over de woonplaats?", "de": "Wie flexibel/kompromissbereit ist sie beim Wohnort?", "type": "scale"}, "sw_haltung": {"en": "How respectful & warm is her attitude toward your parents?", "nl": "Hoe respectvol & warm is haar houding tegenover jouw ouders?", "de": "Wie respektvoll & warm ist ihre Haltung zu deinen Eltern?", "type": "scale"}, "sw_naehe": {"en": "Does her idea of closeness/obligation to your family fit yours?", "nl": "Past haar idee van nabijheid/verplichting tot jouw familie bij het jouwe?", "de": "Passt ihre Vorstellung von Nähe/Verpflichtung ggü. deiner Familie zu deiner?", "type": "scale"}, "sw_konflikt": {"en": "Can she deal maturely with in-laws (no ongoing conflict expected)?", "nl": "Kan zij volwassen omgaan met schoonfamilie (geen aanhoudend conflict te verwachten)?", "de": "Kann sie mit Schwiegerfamilie reif umgehen (kein Dauerkonflikt zu erwarten)?", "type": "yesno"}, "ge_rauchen": {"en": "Is she free of smoking / does her use fit your view?", "nl": "Is zij vrij van roken / past haar gebruik bij jouw idee?", "de": "Ist sie frei von Rauchen / passt ihr Konsum zu deiner Vorstellung?", "type": "yesno"}, "ge_sport": {"en": "How healthy are her exercise/movement habits?", "nl": "Hoe gezond zijn haar beweeg-/sportgewoonten?", "de": "Wie gesund sind ihre Bewegungs-/Sportgewohnheiten?", "type": "scale"}, "ge_ernaehrung": {"en": "How healthy & fitting to you is her diet?", "nl": "Hoe gezond & passend bij jou is haar voeding?", "de": "Wie gesund & passend zu dir ist ihre Ernährung?", "type": "scale"}, "kp_anzahl": {"en": "Does her desired number of children fit yours?", "nl": "Past haar gewenste aantal kinderen bij het jouwe?", "de": "Passt ihre gewünschte Kinderzahl zu deiner?", "type": "scale"}, "kp_timing": {"en": "Does her timing (when to have children) fit yours?", "nl": "Past haar timing (wanneer kinderen) bij de jouwe?", "de": "Passt ihr Zeitplan (wann Kinder) zu deinem?", "type": "scale"}, "kp_rolle": {"en": "Do your ideas on childcare/role-sharing fit together?", "nl": "Passen jullie ideeën over kinderopvang/rolverdeling samen?", "de": "Passen eure Vorstellungen zur Betreuung/Rollenteilung?", "type": "scale"}, "iw_quran": {"en": "Can she read Qur’an (Tajwīd/Arabic)?", "nl": "Kan zij de Koran lezen (Tajwīd/Arabisch)?", "de": "Kann sie Quran lesen (Tajwīd/Arabisch)?", "type": "scale"}, "iw_wissen": {"en": "How much does she know about Islam overall?", "nl": "Hoeveel weet zij over de islam in het algemeen?", "de": "Wie viel weiß sie über den Islam insgesamt?", "type": "scale"}, "iw_sira": {"en": "Does she know the Sīra of the Prophet ﷺ and the basics (fundamentals, everyday fiqh)?", "nl": "Kent zij de Sīra van de Profeet ﷺ en de basis (grondbeginselen, dagelijkse fiqh)?", "de": "Kennt sie die Sīra des Propheten ﷺ und die Basics (Grundlagen, Fiqh des Alltags)?", "type": "yesno"}, "iw_wille": {"en": "Does she want to grow religiously?", "nl": "Wil zij religieus groeien?", "de": "Will sie sich religiös weiterbilden?", "type": "scale"}, "iw_tut": {"en": "What does she concretely do for it (courses, reading, halaqa)?", "nl": "Wat doet zij daar concreet voor (cursussen, lezen, halaqa)?", "de": "Was tut sie konkret dafür (Kurse, Lesen, Halaqa)?", "type": "scale"}}, "PRESETS": {"ausgewogen": {"name": {"de": "Ausgewogen", "en": "Balanced", "nl": "Gebalanceerd"}, "desc": {"de": "Forschungsbasiert – Konflikt, Reife & Vertrauen tragen am meisten.", "en": "Research-based – conflict, maturity & trust carry the most weight.", "nl": "Onderzoeksgebaseerd – conflict, rijpheid & vertrouwen wegen het zwaarst."}}, "konservativ": {"name": {"de": "Konservativ / Religiös", "en": "Conservative / Religious", "nl": "Conservatief / Religieus"}, "desc": {"de": "Dīn, islamisches Wissen, Bescheidenheit & Familie stärker; Anziehung/Lifestyle schwächer.", "en": "Dīn, Islamic knowledge, modesty & family stronger; attraction/lifestyle weaker.", "nl": "Dīn, islamitische kennis, bescheidenheid & familie sterker; aantrekking/levensstijl zwakker."}}, "charakter": {"name": {"de": "Charakter & Zwischenmenschliches", "en": "Character & Interpersonal", "nl": "Karakter & Intermenselijk"}, "desc": {"de": "Konflikt, Reife, emotionale Tiefe, Humor & Freundlichkeit im Fokus.", "en": "Conflict, maturity, emotional depth, humour & kindness in focus.", "nl": "Conflict, rijpheid, emotionele diepte, humor & vriendelijkheid centraal."}}, "praktisch": {"name": {"de": "Praktisch & Alltag", "en": "Practical & Everyday", "nl": "Praktisch & Dagelijks"}, "desc": {"de": "Alltagstauglichkeit, Geld, Haushalt, Standort & Gesundheit höher.", "en": "Everyday fit, money, household, location & health higher.", "nl": "Dagelijkse geschiktheid, geld, huishouden, locatie & gezondheid hoger."}}, "anziehung": {"name": {"de": "Anziehung & Lebensstil", "en": "Attraction & Lifestyle", "nl": "Aantrekking & Levensstijl"}, "desc": {"de": "Attraktivität, Aktivität, Reisen & Lifestyle stärker gewichtet.", "en": "Attractiveness, activity, travel & lifestyle weighted higher.", "nl": "Aantrekkelijkheid, activiteit, reizen & levensstijl zwaarder gewogen."}}, "relig_charakter": {"name": {"de": "Religiös + Charakter", "en": "Religious + Character", "nl": "Religieus + Karakter"}, "desc": {"de": "Dīn-Fokus, aber menschliche Tiefe genauso hoch.", "en": "Dīn focus, but human depth just as high.", "nl": "Dīn-focus, maar menselijke diepte even hoog."}}, "charakter_anziehung": {"name": {"de": "Charakter + Anziehung", "en": "Character + Attraction", "nl": "Karakter + Aantrekking"}, "desc": {"de": "Emotionale Verbindung und Attraktivität zusammen.", "en": "Emotional connection and attractiveness together.", "nl": "Emotionele verbinding en aantrekkelijkheid samen."}}, "konserv_praktisch": {"name": {"de": "Konservativ + Praktisch", "en": "Conservative + Practical", "nl": "Conservatief + Praktisch"}, "desc": {"de": "Werte plus solider Alltag.", "en": "Values plus a solid everyday footing.", "nl": "Waarden plus een solide dagelijks leven."}}, "ganzheitlich": {"name": {"de": "Ganzheitlich / Unsicher", "en": "Holistic / Unsure", "nl": "Holistisch / Onzeker"}, "desc": {"de": "Für ‚ich kann mich nicht festlegen‘: hebt alle Bereiche gleichmäßig an, nichts dominiert.", "en": "For ‘I can’t decide’: lifts every area evenly, nothing dominates.", "nl": "Voor ‘ik kan niet kiezen’: tilt alle gebieden gelijkmatig op, niets domineert."}}}, "QUEST": {"q_relig": {"text": {"de": "Wie stark soll die Ehe religiös/konservativ geprägt sein?", "en": "How strongly should the marriage be religiously/conservatively shaped?", "nl": "Hoe sterk moet het huwelijk religieus/conservatief gekleurd zijn?"}, "left": {"de": "eher liberal", "en": "more liberal", "nl": "meer liberaal"}, "right": {"de": "sehr religiös", "en": "very religious", "nl": "zeer religieus"}}, "q_aussehen": {"text": {"de": "Wie wichtig ist dir äußere Erscheinung im Verhältnis zum Charakter?", "en": "How important are looks to you relative to character?", "nl": "Hoe belangrijk is uiterlijk voor jou ten opzichte van karakter?"}, "left": {"de": "Charakter zählt", "en": "character counts", "nl": "karakter telt"}, "right": {"de": "Aussehen wichtig", "en": "looks matter", "nl": "uiterlijk telt"}}, "q_emotion": {"text": {"de": "Zählt für dich emotionale Tiefe oder praktische Alltagstauglichkeit mehr?", "en": "Does emotional depth or practical everyday fit matter more to you?", "nl": "Telt emotionele diepte of praktische dagelijkse geschiktheid meer voor jou?"}, "left": {"de": "praktisch", "en": "practical", "nl": "praktisch"}, "right": {"de": "emotional", "en": "emotional", "nl": "emotioneel"}}, "q_familie": {"text": {"de": "Wie zentral sind Familie, Kinder & Schwiegerfamilie?", "en": "How central are family, children & in-laws?", "nl": "Hoe centraal staan familie, kinderen & schoonfamilie?"}, "left": {"de": "weniger zentral", "en": "less central", "nl": "minder centraal"}, "right": {"de": "sehr zentral", "en": "very central", "nl": "zeer centraal"}}, "q_lifestyle": {"text": {"de": "Wie wichtig sind gemeinsamer Lebensstil, Reisen & Aktivität?", "en": "How important are a shared lifestyle, travel & activity?", "nl": "Hoe belangrijk zijn een gedeelde levensstijl, reizen & activiteit?"}, "left": {"de": "nebensächlich", "en": "minor", "nl": "bijzaak"}, "right": {"de": "sehr wichtig", "en": "very important", "nl": "zeer belangrijk"}}, "q_finanz": {"text": {"de": "Wie wichtig ist finanzielle Vernunft & Alltagsorganisation?", "en": "How important are financial sense & everyday organization?", "nl": "Hoe belangrijk zijn financieel verstand & dagelijkse organisatie?"}, "left": {"de": "weniger", "en": "less", "nl": "minder"}, "right": {"de": "sehr wichtig", "en": "very important", "nl": "zeer belangrijk"}}, "q_bildung": {"text": {"de": "Wie wichtig ist Bildung & intellektuelle Ebenbürtigkeit?", "en": "How important are education & intellectual parity?", "nl": "Hoe belangrijk zijn opleiding & intellectuele gelijkwaardigheid?"}, "left": {"de": "weniger", "en": "less", "nl": "minder"}, "right": {"de": "sehr wichtig", "en": "very important", "nl": "zeer belangrijk"}}}, "DEALS": {"db_islam": {"de": "Islam-Grundkompatibilität gegeben (bei Muslima: gelebter Dīn / bei Nicht-Muslima: trägt islamische Ehe & Kindererziehung mit)?", "en": "Basic Islam compatibility given (Muslim: lived Dīn / non-Muslim: supports an Islamic marriage & upbringing)?", "nl": "Basale islam-compatibiliteit aanwezig (moslima: geleefde Dīn / niet-moslima: steunt islamitisch huwelijk & opvoeding)?"}, "db_kids": {"de": "Kinderwunsch passt zu deinem (Ja/Nein & ungefährer Zeitpunkt)?", "en": "Desire for children matches yours (yes/no & rough timing)?", "nl": "Kinderwens komt overeen met de jouwe (ja/nee & globale timing)?"}, "db_addiction": {"de": "Keine Suchterkrankung (Alkohol, Drogen, Glücksspiel o. Ä.)?", "en": "No addiction (alcohol, drugs, gambling, etc.)?", "nl": "Geen verslaving (alcohol, drugs, gokken e.d.)?"}, "db_stability": {"de": "Stabile Vergangenheit – kein anhaltendes Chaos, kein ‚Trümmerfeld‘ ungeklärter Beziehungen?", "en": "Stable past – no ongoing chaos, no ‘wreckage’ of unresolved relationships?", "nl": "Stabiel verleden – geen aanhoudende chaos, geen ‘puinhoop’ van onopgeloste relaties?"}, "db_respect": {"de": "Sie respektiert dich (und wird von anderen als respektabel wahrgenommen)?", "en": "She respects you (and is seen by others as respectable)?", "nl": "Zij respecteert jou (en wordt door anderen als respectabel gezien)?"}}, "UI": {"kicker": {"de": "Reflexionswerkzeug · kein Orakel", "en": "A tool for reflection · not an oracle", "nl": "Reflectiehulpmiddel · geen orakel"}, "title": {"de": "Bewertungsmatrix zur Partnerwahl", "en": "Partner Evaluation Matrix", "nl": "Beoordelingsmatrix voor Partnerkeuze"}, "sub": {"de": "Zuerst harte Deal-Breaker, dann konkrete Einzelfragen pro Kategorie – daraus errechnet sich alles automatisch. Das Wabennetz zeigt Stärken & Schwächen auf einen Blick. Achte darauf, wo dein Bauchgefühl von der Punktzahl abweicht.", "en": "First hard deal-breakers, then concrete questions per category – everything is computed automatically. The radar shows strengths & weaknesses at a glance. Watch where your gut feeling diverges from the score.", "nl": "Eerst harde dealbreakers, dan concrete vragen per categorie – alles wordt automatisch berekend. Het spinnenweb toont sterke & zwakke punten in één oogopslag. Let op waar je onderbuikgevoel afwijkt van de score."}, "langLabel": {"de": "Sprache", "en": "Language", "nl": "Taal"}, "langHint": {"de": "Sprache jederzeit umstellbar", "en": "Language can be changed anytime", "nl": "Taal is altijd te wijzigen"}, "export": {"de": "⬇ Daten exportieren (sichern)", "en": "⬇ Export data (backup)", "nl": "⬇ Gegevens exporteren (back-up)"}, "import": {"de": "⬆ Daten importieren", "en": "⬆ Import data", "nl": "⬆ Gegevens importeren"}, "tab_gewichtung": {"de": "Gewichtung", "en": "Weighting", "nl": "Weging"}, "tab_bewerten": {"de": "Bewerten", "en": "Evaluate", "nl": "Beoordelen"}, "tab_radar": {"de": "Wabennetz", "en": "Radar", "nl": "Spinnenweb"}, "tab_ranking": {"de": "Ranking", "en": "Ranking", "nl": "Ranglijst"}, "tab_wunsch": {"de": "Mein Wunschprofil", "en": "My Ideal Profile", "nl": "Mijn Wensprofiel"}, "tab_kriterien": {"de": "Kriterien", "en": "Criteria", "nl": "Criteria"}, "footer": {"de": "Deine Eingaben bleiben lokal gespeichert. Eine Punktzahl ersetzt keine Entscheidung – im Islam gilt zudem das Istichāra-Gebet als Weg, Klarheit zu suchen, wenn der Verstand allein nicht weiterkommt.", "en": "Your entries stay stored locally. A score is no substitute for a decision – in Islam the Istikhāra prayer is also a way to seek clarity when reason alone falls short.", "nl": "Je invoer blijft lokaal opgeslagen. Een score vervangt geen beslissing – in de islam is het Istichāra-gebed ook een manier om helderheid te zoeken wanneer verstand alleen tekortschiet."}, "addPerson": {"de": "+ Person hinzufügen", "en": "+ Add person", "nl": "+ Persoon toevoegen"}, "remove": {"de": "entfernen", "en": "remove", "nl": "verwijderen"}, "isMuslima": {"de": "Ist sie Muslima?", "en": "Is she Muslim?", "nl": "Is zij moslima?"}, "yes": {"de": "ja", "en": "yes", "nl": "ja"}, "no": {"de": "nein", "en": "no", "nl": "nee"}, "dealTitle": {"de": "Harte Deal-Breaker (Mindestschwellen)", "en": "Hard deal-breakers (minimum thresholds)", "nl": "Harde dealbreakers (minimumdrempels)"}, "dealFail": {"de": "Deal-Breaker nicht erfüllt – diese Person wird im Ranking als ‚unter Schwelle‘ markiert, unabhängig von der Punktzahl.", "en": "deal-breaker(s) not met – this person is marked ‘below threshold’ in the ranking, regardless of score.", "nl": "dealbreaker(s) niet vervuld – deze persoon wordt in de ranglijst als ‘onder de drempel’ gemarkeerd, ongeacht de score."}, "gut": {"de": "Bauchgefühl (bewusst getrennt)", "en": "Gut feeling (kept separate on purpose)", "nl": "Onderbuikgevoel (bewust apart)"}, "gutHint": {"de": "Wie fühlt es sich an, unabhängig von den Punkten? Fließt nicht in die Rechnung ein.", "en": "How does it feel, regardless of the points? Not included in the calculation.", "nl": "Hoe voelt het, los van de punten? Telt niet mee in de berekening."}, "empty_person": {"de": "Noch niemand erfasst. Füge eine Person hinzu, um zu beginnen.", "en": "No one added yet. Add a person to begin.", "nl": "Nog niemand toegevoegd. Voeg een persoon toe om te beginnen."}, "radar_single": {"de": "Nur ihr Profil", "en": "Her profile only", "nl": "Alleen haar profiel"}, "radar_wish": {"de": "gegen Wunschprofil", "en": "vs. ideal profile", "nl": "tegen wensprofiel"}, "radar_compare": {"de": "zwei vergleichen", "en": "compare two", "nl": "twee vergelijken"}, "personA": {"de": "Person A:", "en": "Person A:", "nl": "Persoon A:"}, "personB": {"de": "Person B:", "en": "Person B:", "nl": "Persoon B:"}, "target": {"de": " (Ziel)", "en": " (target)", "nl": " (doel)"}, "radar_empty": {"de": "Erfasse zuerst mindestens eine Person im Tab ‚Bewerten‘.", "en": "First add at least one person in the ‘Evaluate’ tab.", "nl": "Voeg eerst minstens één persoon toe in het tabblad ‘Beoordelen’."}, "wishProfile": {"de": "Wunschprofil", "en": "Ideal profile", "nl": "Wensprofiel"}, "rank_empty": {"de": "Noch keine Bewertungen. Erfasse zuerst eine Person.", "en": "No evaluations yet. Add a person first.", "nl": "Nog geen beoordelingen. Voeg eerst een persoon toe."}, "belowThreshold": {"de": "Unter Mindestschwelle · ", "en": "Below threshold · ", "nl": "Onder de drempel · "}, "dbNotMet": {"de": " Deal-Breaker nicht erfüllt", "en": " deal-breaker(s) not met", "nl": " dealbreaker(s) niet vervuld"}, "points": {"de": "Punkte", "en": "Points", "nl": "Punten"}, "gutShort": {"de": "Bauchgefühl", "en": "Gut feeling", "nl": "Onderbuik"}, "gap": {"de": "Deutliche Abweichung Kopf/Bauch", "en": "Notable head/gut divergence", "nl": "Duidelijk verschil hoofd/onderbuik"}, "gapTail": {"de": "Das ist die interessanteste Stelle – frag dich, woher sie kommt.", "en": "That’s the most interesting spot – ask yourself where it comes from.", "nl": "Dat is de interessantste plek – vraag je af waar het vandaan komt."}, "rankInterpret": {"de": "Wie du das liest: Die Punktzahl spiegelt deine eigenen Gewichtungen, sie ist kein Urteil. Ein Deal-Breaker sticht jede Punktzahl. Wo Kopf und Bauch auseinanderliegen, steckt meist die eigentliche Erkenntnis.", "en": "How to read this: the score reflects your own weightings, it’s not a verdict. A deal-breaker trumps any score. Where head and gut diverge usually holds the real insight.", "nl": "Hoe je dit leest: de score weerspiegelt je eigen wegingen, het is geen oordeel. Een dealbreaker overtroeft elke score. Waar hoofd en onderbuik uiteenlopen, zit meestal het echte inzicht."}, "wishIntro": {"de": "Stelle pro Dimension dein Idealprofil ein – das legt sich im Wabennetz über eine Person und zeigt die Passung, nicht nur ihre Stärke. Klapp eine Kategorie auf, um einzelne Unterpunkte feiner zu gewichten.", "en": "Set your ideal per dimension – it overlays a person in the radar and shows fit, not just her strength. Expand a category to weight individual sub-points more finely.", "nl": "Stel je ideaal per dimensie in – dat legt zich in het spinnenweb over een persoon en toont de match, niet alleen haar sterkte. Klap een categorie uit om subpunten fijner te wegen."}, "dealHeader": {"de": "Harte Deal-Breaker", "en": "Hard deal-breakers", "nl": "Harde dealbreakers"}, "dealOverride": {"de": " (überschreiben jede Punktzahl):", "en": " (override any score):", "nl": " (overtreffen elke score):"}, "view": {"de": "Ansicht:", "en": "View:", "nl": "Weergave:"}, "sumWeights": {"de": "Summe der Gewichte:", "en": "Sum of weights:", "nl": "Som van gewichten:"}, "sortedByWeight": {"de": " · nach aktueller Gewichtung sortiert", "en": " · sorted by current weighting", "nl": " · gesorteerd op huidige weging"}, "muslima": {"de": "Muslima", "en": "Muslim", "nl": "Moslima"}, "nichtmuslima": {"de": "Nicht-Muslima", "en": "Non-Muslim", "nl": "Niet-moslima"}, "gewIntro": {"de": "Wähle einen Schnellstart – die Gewichte der Kategorien passen sich sofort an. Optional kannst du sie danach über den Fragebogen feinjustieren. Wabennetz und Ranking reagieren live.", "en": "Pick a quick start – the category weights adjust instantly. Optionally fine-tune them afterwards via the questionnaire. Radar and ranking react live.", "nl": "Kies een snelstart – de categoriegewichten passen zich meteen aan. Optioneel kun je ze daarna via de vragenlijst fijn afstellen. Spinnenweb en ranglijst reageren live."}, "qWhenTitle": {"de": "Wann den Fragebogen nutzen?", "en": "When to use the questionnaire?", "nl": "Wanneer de vragenlijst gebruiken?"}, "qWhenText": {"de": "Die Presets sind der Schnellstart. Den Fragebogen nutzt du, wenn kein Preset genau passt, wenn du zwischen zwei Richtungen liegst, oder wenn du nach dem Preset einzelne Aspekte (z. B. Religiosität, Aussehen, Familie) noch feiner nachjustieren willst. Er verschiebt die Gewichte zusätzlich zum gewählten Preset – Mitte bedeutet neutral.", "en": "The presets are the quick start. Use the questionnaire when no preset fits exactly, when you’re between two directions, or when you want to fine-tune individual aspects (e.g. religiosity, looks, family) after a preset. It shifts the weights on top of the chosen preset – the middle means neutral.", "nl": "De presets zijn de snelstart. Gebruik de vragenlijst als geen preset precies past, als je tussen twee richtingen zit, of als je na een preset losse aspecten (bijv. religiositeit, uiterlijk, familie) fijner wilt bijstellen. Hij verschuift de gewichten bovenop de gekozen preset – het midden betekent neutraal."}, "qToggleOpen": {"de": "Fragebogen zur Feinjustierung öffnen ▸", "en": "Open questionnaire for fine-tuning ▸", "nl": "Vragenlijst voor fijnafstelling openen ▸"}, "qToggleClose": {"de": "Fragebogen ausblenden ▾", "en": "Hide questionnaire ▾", "nl": "Vragenlijst verbergen ▾"}, "qBoxIntro": {"de": "Schiebe jede Frage dorthin, wo du stehst. Mitte = neutral. Die Gewichte verschieben sich entsprechend – zusätzlich zum gewählten Preset.", "en": "Slide each question to where you stand. Middle = neutral. The weights shift accordingly – on top of the chosen preset.", "nl": "Schuif elke vraag naar waar jij staat. Midden = neutraal. De gewichten verschuiven navenant – bovenop de gekozen preset."}, "qReset": {"de": "Fragebogen zurücksetzen", "en": "Reset questionnaire", "nl": "Vragenlijst herstellen"}, "previewLabel": {"de": "Vorschau:", "en": "Preview:", "nl": "Voorbeeld:"}, "resultWeights": {"de": "Resultierende Gewichte (Summe 100%):", "en": "Resulting weights (sum 100%):", "nl": "Resulterende gewichten (som 100%):"}, "scaleLabel": {"de": "Skala", "en": "Scale", "nl": "Schaal"}, "yesnoLabel": {"de": "Ja/Nein", "en": "Yes/No", "nl": "Ja/Nee"}, "partiallyLabel": {"de": "Teilweise", "en": "Partly", "nl": "Deels"}}};
+
+// Sprach-Helfer
+let CURRENT_LANG = "de";
+function L(dict, lang){ const lg = lang || CURRENT_LANG; if(!dict) return ""; return dict[lg] || dict.de || ""; }
+function catText(id, field, lang){ const c = TRANS.CAT[id]; if(!c||!c[field]) return ""; return L(c[field], lang); }
+function qText(id, lang){ const q = TRANS.Q[id]; return q ? L(q, lang) : id; }
+
+
+
+/* ══════════════ Deal-Breaker (harte Mindestschwellen) ══════════════ */
+// ── Deal-Breaker (IDs; Text kommt aus TRANS.DEALS) ──
+const DEALBREAKER_IDS = ["db_islam","db_kids","db_addiction","db_stability","db_respect"];
+const dealbreakers = (lang) => DEALBREAKER_IDS.map((id)=>({ id, text: L(TRANS.DEALS[id], lang) }));
+
+// ── Kategorie-Bauplan: id, weight, color, dealbreaker?, catKey (für TRANS.CAT), Fragen (id+type) ──
+const CAT_DEFS = {
+  din_m: { catKey:"din_m", weight:12, color:"#1f7a5c", questions:[
+    ["din_praxis","scale"],["din_achlaq","scale"],["din_erziehung","yesno"],["din_auslegung","yesno"],["din_wachstum","yesno"] ] },
+  din_nm:{ catKey:"din_nm", weight:18, color:"#1f7a5c", questions:[
+    ["in_kinder","yesno"],["in_praxis","yesno"],["in_alltag","yesno"],["in_feste","scale"],["in_reaktion","scale"],["in_offen","scale"],["in_familie","yesno"] ] },
+  islamwissen:{ catKey:"islamwissen", weight:6, color:"#1f7a5c", questions:[
+    ["iw_quran","scale"],["iw_wissen","scale"],["iw_sira","yesno"],["iw_wille","scale"],["iw_tut","scale"] ] },
+  reife:{ catKey:"reife", weight:9, color:"#7a5cc0", questions:[
+    ["r_verantwortung","scale"],["r_stress","scale"],["r_reflexion","scale"],["r_impuls","scale"],["r_peace","yesno"] ] },
+  konflikt:{ catKey:"konflikt", weight:9, color:"#c0563b", questions:[
+    ["k_verachtung","yesno"],["k_reparatur","scale"],["k_zuhoeren","scale"],["k_positiv","scale"] ] },
+  vertrauen:{ catKey:"vertrauen", weight:8, color:"#3b6ec0", questions:[
+    ["v_ehrlich","scale"],["v_loyal","scale"],["v_vergangenheit","yesno"],["v_stabil","scale"],["v_treue","scale"] ] },
+  erwartung:{ catKey:"erwartung", weight:5, color:"#c09a3b", questions:[
+    ["e_ehebild","scale"],["e_zukunft","scale"],["e_prioritaet","yesno"] ] },
+  haushalt:{ catKey:"haushalt", weight:3, color:"#3b8a7a", questions:[
+    ["h_teilung","scale"],["h_kochen","scale"],["h_zusammen","yesno"] ] },
+  geld:{ catKey:"geld", weight:3, color:"#5c8a3b", questions:[
+    ["g_verantwortung","scale"],["g_schulden","yesno"],["g_material","scale"],["g_passung","yesno"] ] },
+  familie:{ catKey:"familie", weight:3, color:"#8a6e3b", questions:[
+    ["f_vater","scale"],["f_mutter","scale"],["f_grenzen","yesno"] ] },
+  freunde:{ catKey:"freunde", weight:3, color:"#c03b7a", questions:[
+    ["fr_qualitaet","scale"],["fr_bindung","scale"],["fr_kindness","scale"],["fr_respekt","yesno"] ] },
+  mutter:{ catKey:"mutter", weight:4, color:"#b05a2b", questions:[
+    ["mu_geduld","scale"],["mu_werte","scale"],["mu_reife","scale"] ] },
+  bildung:{ catKey:"bildung", weight:2, color:"#3b6ec0", questions:[
+    ["b_niveau","scale"],["b_wachstum","scale"],["b_anders","yesno"] ] },
+  anziehung:{ catKey:"anziehung", weight:8, color:"#c0563b", questions:[
+    ["a_gesicht","scale"],["a_koerper","scale"],["a_taille","scale"],["a_oberweite","scale"],["a_gesamt","scale"],["a_emotion","scale"],["a_lachen","scale"] ] },
+  aktiv:{ catKey:"aktiv", weight:3, color:"#5c8a3b", questions:[
+    ["ak_sport","scale"],["ak_natur","scale"],["ak_hobbys","scale"],["ak_passung","yesno"] ] },
+  auftreten:{ catKey:"auftreten", weight:5, color:"#a05a8a", questions:[
+    ["au_stil","scale"],["au_bescheiden","scale"],["au_schminke","scale"],["au_ausgaben","scale"] ] },
+  lebensstil:{ catKey:"lebensstil", weight:5, color:"#c08a3b", questions:[
+    ["l_hochzeit","scale"],["l_reisen","scale"],["l_prioritaet","yesno"],["l_finanzstil","scale"] ] },
+  standort:{ catKey:"standort", weight:3, color:"#5c8a8a", questions:[
+    ["s_ort","yesno"],["s_familie","scale"],["s_flexibel","scale"] ] },
+  schwieger:{ catKey:"schwieger", weight:3, color:"#8a6e5c", questions:[
+    ["sw_haltung","scale"],["sw_naehe","scale"],["sw_konflikt","yesno"] ] },
+  gesundheit:{ catKey:"gesundheit", weight:2, color:"#5c8a3b", questions:[
+    ["ge_rauchen","yesno"],["ge_sport","scale"],["ge_ernaehrung","scale"] ] },
+  kinderplan:{ catKey:"kinderplan", weight:4, color:"#b0763b", questions:[
+    ["kp_anzahl","scale"],["kp_timing","scale"],["kp_rolle","scale"] ] },
+};
+
+// Reihenfolge der Basis-Kategorien (ohne din/islamwissen)
+const BASE_ORDER = ["reife","konflikt","vertrauen","erwartung","haushalt","geld","familie","freunde","mutter","bildung","anziehung","aktiv","auftreten","lebensstil","standort","schwieger","gesundheit","kinderplan"];
+
+// Baut eine lokalisierte Kategorie aus dem Bauplan
+function makeCat(key, lang){
+  const d = CAT_DEFS[key];
+  return {
+    id: (key==="din_m"||key==="din_nm") ? "din" : key,
+    name: catText(d.catKey,"name",lang),
+    short: catText(d.catKey,"short",lang),
+    weight: d.weight,
+    color: d.color,
+    dealbreaker: (key==="din_m"||key==="din_nm"),
+    note: catText(d.catKey,"note",lang),
+    questions: d.questions.map(([qid,type])=>({ id:qid, type, text: qText(qid,lang) })),
+  };
+}
+
+const buildCategories = (isMuslima, lang) => { const lg = lang || CURRENT_LANG; return _buildCategories(isMuslima, lg); };
+const _buildCategories = (isMuslima, lang) =>
+  isMuslima
+    ? [makeCat("din_m",lang), makeCat("islamwissen",lang), ...BASE_ORDER.map((k)=>makeCat(k,lang))]
+    : [makeCat("din_nm",lang), ...BASE_ORDER.map((k)=>makeCat(k,lang))];
+
+
+// ── Gewichts-Infrastruktur ──
+const ALL_CAT_IDS = ["din","islamwissen","reife","konflikt","vertrauen","erwartung",
+  "haushalt","geld","familie","freunde","mutter","bildung","anziehung","aktiv",
+  "auftreten","lebensstil","standort","schwieger","gesundheit","kinderplan"];
+
+const DEFAULT_WEIGHTS = {
+  muslima: { din:12, islamwissen:6, reife:9, konflikt:9, vertrauen:8, anziehung:8, erwartung:5, mutter:4, familie:3, freunde:3, geld:3, haushalt:3, bildung:2, aktiv:3, auftreten:5, lebensstil:5, kinderplan:4, standort:3, schwieger:3, gesundheit:2 },
+  nicht:   { din:18, islamwissen:0, reife:9, konflikt:9, vertrauen:8, anziehung:8, erwartung:5, mutter:4, familie:3, freunde:3, geld:3, haushalt:3, bildung:2, aktiv:3, auftreten:5, lebensstil:5, kinderplan:4, standort:3, schwieger:3, gesundheit:2 },
+};
+
+// Preset-IDs + Emphasis (Text/Namen kommen aus TRANS.PRESETS)
+const PRESET_IDS = ["ausgewogen","konservativ","charakter","praktisch","anziehung","relig_charakter","charakter_anziehung","konserv_praktisch","ganzheitlich"];
+// Emphasis-Multiplikatoren. Betonte Kategorien werden kräftig angehoben (>1),
+// bewusst zurückgestellte deutlich gedämpft (<1), damit eine gewählte Präferenz
+// im Ergebnis klar durchschlägt und nicht von Allroundern überdeckt wird.
+const PRESET_EMPH = {
+  ausgewogen:{},
+  konservativ:{ din:2.6, islamwissen:2.6, auftreten:2.2, schwieger:1.8, familie:1.8, mutter:1.6, kinderplan:1.6, anziehung:0.3, lebensstil:0.3, aktiv:0.5, erwartung:0.8 },
+  charakter:{ konflikt:2.6, reife:2.6, vertrauen:2.2, freunde:1.7, erwartung:1.4, mutter:1.3, anziehung:0.35, auftreten:0.35, lebensstil:0.4, aktiv:0.6 },
+  praktisch:{ haushalt:2.6, geld:2.6, standort:2.2, gesundheit:2.2, kinderplan:1.7, erwartung:1.5, anziehung:0.4, lebensstil:0.4, auftreten:0.5, islamwissen:0.7 },
+  anziehung:{ anziehung:3.0, aktiv:2.2, lebensstil:2.2, auftreten:1.9, konflikt:0.55, reife:0.6, geld:0.6, haushalt:0.6, islamwissen:0.6 },
+  relig_charakter:{ din:2.1, islamwissen:2.0, konflikt:2.0, reife:2.0, vertrauen:1.7, auftreten:1.4, anziehung:0.4, lebensstil:0.45, aktiv:0.6 },
+  charakter_anziehung:{ konflikt:2.0, reife:1.9, vertrauen:1.7, anziehung:2.2, aktiv:1.6, auftreten:1.5, haushalt:0.55, geld:0.6, din:0.8 },
+  konserv_praktisch:{ din:2.0, islamwissen:1.9, auftreten:1.7, familie:1.5, geld:2.0, haushalt:2.0, standort:1.7, gesundheit:1.6, kinderplan:1.4, anziehung:0.4, lebensstil:0.4, aktiv:0.6 },
+  ganzheitlich:{ haushalt:1.35, geld:1.35, familie:1.35, freunde:1.35, bildung:1.4, aktiv:1.35, auftreten:1.25, lebensstil:1.25, standort:1.35, schwieger:1.35, gesundheit:1.4, kinderplan:1.25, mutter:1.25, erwartung:1.3 },
+};
+const presets = (lang) => PRESET_IDS.map((id)=>({ id, name:L(TRANS.PRESETS[id].name,lang), desc:L(TRANS.PRESETS[id].desc,lang), emph:PRESET_EMPH[id] }));
+
+// Fragebogen-IDs + Effekte (Text aus TRANS.QUEST)
+const QUESTIONNAIRE = [
+  { id:"q_relig", effect:(v)=>({ din:1+v*1.8, islamwissen:1+v*1.8, auftreten:1+v*1.1, schwieger:1+v*0.6, anziehung:1-v*0.6, lebensstil:1-v*0.5 }) },
+  { id:"q_aussehen", effect:(v)=>({ anziehung:1+v*1.8, auftreten:1+v*1.0, aktiv:1+v*0.6, konflikt:1-v*0.45, reife:1-v*0.45 }) },
+  { id:"q_emotion", effect:(v)=>({ konflikt:1+v*1.4, reife:1+v*1.2, vertrauen:1+v*0.9, haushalt:1-v*0.6, geld:1-v*0.5, standort:1-v*0.4 }) },
+  { id:"q_familie", effect:(v)=>({ familie:1+v*1.4, mutter:1+v*1.4, kinderplan:1+v*1.4, schwieger:1+v*1.1 }) },
+  { id:"q_lifestyle", effect:(v)=>({ lebensstil:1+v*1.7, aktiv:1+v*1.7, anziehung:1+v*0.5 }) },
+  { id:"q_finanz", effect:(v)=>({ geld:1+v*1.7, haushalt:1+v*1.3, standort:1+v*0.5 }) },
+  { id:"q_bildung", effect:(v)=>({ bildung:1+v*2.2, reife:1+v*0.5 }) },
+];
+
+function computeWeights(branch, emph) {
+  const base = DEFAULT_WEIGHTS[branch]; const raw = {}; let sum = 0;
+  ALL_CAT_IDS.forEach((id) => { const b = base[id]||0; const m = emph&&emph[id]?emph[id]:1; const v=b*m; raw[id]=v; sum+=v; });
+  const out = {}; ALL_CAT_IDS.forEach((id)=>{ out[id]= sum>0?Math.round((raw[id]/sum)*100):0; });
+  let s2 = ALL_CAT_IDS.reduce((a,id)=>a+out[id],0);
+  if (s2!==100){ let maxId=ALL_CAT_IDS[0]; ALL_CAT_IDS.forEach((id)=>{ if(out[id]>out[maxId]) maxId=id; }); out[maxId]+=(100-s2); }
+  return out;
+}
+function invertEffect(map){ const out={}; Object.keys(map).forEach((id)=>{ out[id]= map[id]!==0?1/map[id]:1; }); return out; }
+function combinedEmphasis(presetId, answers) {
+  const emph={}; const pe = PRESET_EMPH[presetId]||{};
+  ALL_CAT_IDS.forEach((id)=>{ emph[id]= pe[id]||1; });
+  if (answers){
+    QUESTIONNAIRE.forEach((q)=>{
+      const v = typeof answers[q.id]==="number"?answers[q.id]:0.5;
+      const centered=(v-0.5)*2;
+      const factorMap = centered>=0 ? q.effect(centered) : invertEffect(q.effect(-centered));
+      Object.keys(factorMap).forEach((id)=>{ emph[id]=(emph[id]||1)*factorMap[id]; });
+    });
+  }
+  return emph;
+}
+
+const emptyPartner = (name) => ({ name, isMuslima: true, deal: {}, answers: {}, gut: 5 });
+
+function categoryScore(cat, answers) {
+  const vals = cat.questions.map((q) => answers[q.id]).filter((v) => typeof v === "number");
+  if (vals.length === 0) return null;
+  return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+function catWeight(cat, weights) {
+  if (weights && typeof weights[cat.id] === "number") return weights[cat.id];
+  return cat.weight;
+}
+function totalScore(p, weights) {
+  const cats = buildCategories(p.isMuslima);
+  let total = 0;
+  cats.forEach((cat) => {
+    const s = categoryScore(cat, p.answers);
+    if (s !== null) { total += (s / 10) * catWeight(cat, weights); }
+  });
+  return total;
+}
+function failedDealbreakers(p) {
+  return dealbreakers(CURRENT_LANG).filter((d) => p.deal[d.id] === false);
+}
+
+/* ══════════════ App ══════════════ */
+function App() {
+  const [partners, setPartners] = useState([]);
+  const [wish, setWish] = useState({});
+  const [tab, setTab] = useState("gewichtung");
+  const [lang, setLang] = useState("de");
+  CURRENT_LANG = lang;
+  const [presetId, setPresetId] = useState("ausgewogen");
+  const [qAnswers, setQAnswers] = useState({});
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    try {
+      const a = localStorage.getItem("pw3_partners");
+      if (a) setPartners(JSON.parse(a));
+      const w = localStorage.getItem("pw3_wish");
+      if (w) setWish(JSON.parse(w));
+      const pr = localStorage.getItem("pw3_preset");
+      if (pr) setPresetId(JSON.parse(pr));
+      const qa = localStorage.getItem("pw3_qanswers");
+      if (qa) setQAnswers(JSON.parse(qa));
+      const lg = localStorage.getItem("pw3_lang");
+      if (lg) setLang(JSON.parse(lg));
+    } catch (e) {}
+    setLoaded(true);
+  }, []);
+  useEffect(() => {
+    if (!loaded) return;
+    try {
+      localStorage.setItem("pw3_partners", JSON.stringify(partners));
+      localStorage.setItem("pw3_wish", JSON.stringify(wish));
+      localStorage.setItem("pw3_preset", JSON.stringify(presetId));
+      localStorage.setItem("pw3_qanswers", JSON.stringify(qAnswers));
+      localStorage.setItem("pw3_lang", JSON.stringify(lang));
+    } catch (e) { console.error(e); }
+  }, [partners, wish, presetId, qAnswers, lang, loaded]);
+
+  // Effektive Gewichte je Zweig aus Preset + Fragebogen
+  const emph = combinedEmphasis(presetId, qAnswers);
+  const weightsMuslima = computeWeights("muslima", emph);
+  const weightsNicht = computeWeights("nicht", emph);
+  const weightsFor = (isMuslima) => (isMuslima ? weightsMuslima : weightsNicht);
+
+  const addPartner = () => setPartners([...partners, emptyPartner(`Person ${partners.length + 1}`)]);
+  const updatePartner = (idx, patch) => setPartners(partners.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
+  const removePartner = (idx) => setPartners(partners.filter((_, i) => i !== idx));
+  const setAnswer = (idx, qid, val) => { const p = partners[idx]; updatePartner(idx, { answers: { ...p.answers, [qid]: val } }); };
+  const setDeal = (idx, did, val) => { const p = partners[idx]; updatePartner(idx, { deal: { ...p.deal, [did]: val } }); };
+
+  // ── Echte lokale Sicherung: Export / Import als Datei ──
+  const exportData = () => {
+    const payload = { version: 3, exportedAt: new Date().toISOString(), partners, wish };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "partnerwahl-daten.json";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+  const importData = (file) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (Array.isArray(data.partners)) setPartners(data.partners);
+        if (data.wish && typeof data.wish === "object") setWish(data.wish);
+      } catch (e) { alert("Datei konnte nicht gelesen werden – ist es die richtige JSON-Datei?"); }
+    };
+    reader.readAsText(file);
+  };
+
+  return (
+    <div style={ST.page}>
+      <div style={ST.container}>
+        <header style={ST.header}>
+          <div style={ST.topRow}>
+            <div style={ST.kicker}>{L(TRANS.UI.kicker, lang)}</div>
+            <div style={ST.langWrap}>
+              <span style={ST.langHint}>{L(TRANS.UI.langHint, lang)}</span>
+              <div style={ST.langSwitch}>
+                {[["de","DE"],["en","EN"],["nl","NL"]].map(([code,lbl])=>(
+                  <button key={code} onClick={()=>setLang(code)}
+                    style={{...ST.langBtn,...(lang===code?ST.langBtnActive:{})}}>{lbl}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <h1 style={ST.h1}>{L(TRANS.UI.title, lang)}</h1>
+          <p style={ST.sub}>{L(TRANS.UI.sub, lang)}</p>
+          <div style={ST.backupRow}>
+            <button style={ST.backupBtn} onClick={exportData}>{L(TRANS.UI.export, lang)}</button>
+            <label style={ST.backupBtnAlt}>
+              {L(TRANS.UI.import, lang)}
+              <input type="file" accept="application/json,.json" style={{ display: "none" }}
+                onChange={(e) => { if (e.target.files && e.target.files[0]) importData(e.target.files[0]); e.target.value=""; }} />
+            </label>
+          </div>
+        </header>
+
+        <nav style={ST.tabs}>
+          {[["gewichtung","tab_gewichtung"],["bewerten","tab_bewerten"],["radar","tab_radar"],["ranking","tab_ranking"],["wunsch","tab_wunsch"],["kriterien","tab_kriterien"]].map(([id,key])=>(
+            <button key={id} onClick={()=>setTab(id)} style={{...ST.tab,...(tab===id?ST.tabActive:{})}}>{L(TRANS.UI[key], lang)}</button>
+          ))}
+        </nav>
+
+        {tab==="gewichtung" && <Gewichtung {...{presetId,setPresetId,qAnswers,setQAnswers,weightsMuslima,weightsNicht}} />}
+        {tab==="bewerten" && <Bewerten {...{partners,addPartner,updatePartner,removePartner,setAnswer,setDeal,weightsFor}} />}
+        {tab==="radar" && <RadarView {...{partners,wish,weightsFor}} />}
+        {tab==="ranking" && <Ranking partners={partners} weightsFor={weightsFor} />}
+        {tab==="wunsch" && <Wunsch {...{wish,setWish}} />}
+        {tab==="kriterien" && <Kriterien weightsMuslima={weightsMuslima} weightsNicht={weightsNicht} />}
+
+        <footer style={ST.footer}>{L(TRANS.UI.footer, lang)}</footer>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ Bewerten ══════════════ */
+function Bewerten({ partners, addPartner, updatePartner, removePartner, setAnswer, setDeal, weightsFor }) {
+  const [open, setOpen] = useState({});
+  const toggle = (k) => setOpen((s) => ({ ...s, [k]: !s[k] }));
+
+  return (
+    <div>
+      {partners.length===0 && <div style={ST.empty}>{L(TRANS.UI.empty_person, CURRENT_LANG)}</div>}
+      {partners.map((p, idx) => {
+        const cats = buildCategories(p.isMuslima);
+        const failed = failedDealbreakers(p);
+        return (
+          <div key={idx} style={ST.card}>
+            <div style={ST.cardHead}>
+              <input value={p.name} onChange={(e)=>updatePartner(idx,{name:e.target.value})} style={ST.nameInput}/>
+              <button onClick={()=>removePartner(idx)} style={ST.removeBtn}>{L(TRANS.UI.remove, CURRENT_LANG)}</button>
+            </div>
+
+            <div style={ST.toggleRow}>
+              <span style={ST.toggleLabel}>{L(TRANS.UI.isMuslima, CURRENT_LANG)}</span>
+              <div style={ST.dbButtons}>
+                {[["yes",true],["no",false]].map(([lk,val])=>(
+                  <button key={lk} onClick={()=>updatePartner(idx,{isMuslima:val})}
+                    style={{...ST.dbBtn,...(p.isMuslima===val?ST.toggleActive:{})}}>{L(TRANS.UI[lk],CURRENT_LANG)}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Deal-Breaker-Block */}
+            <div style={ST.dealBox}>
+              <div style={ST.dealTitle}>{L(TRANS.UI.dealTitle, CURRENT_LANG)}</div>
+              {dealbreakers(CURRENT_LANG).map((d)=>(
+                <div key={d.id} style={ST.dealRow}>
+                  <span style={ST.dealText}>{d.text}</span>
+                  <div style={ST.dbButtons}>
+                    {[["yes",true],["no",false]].map(([lk,val])=>(
+                      <button key={lk} onClick={()=>setDeal(idx,d.id,val)}
+                        style={{...ST.dbBtnSm,...(p.deal[d.id]===val?(val?ST.dbYes:ST.dbNo):{})}}>{L(TRANS.UI[lk],CURRENT_LANG)}</button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {failed.length>0 && (
+                <div style={ST.dbWarn}>
+                  {failed.length}{L(TRANS.UI.dealFail, CURRENT_LANG)}
+                </div>
+              )}
+            </div>
+
+            {/* Kategorien */}
+            {cats.map((cat) => {
+              const k = `${idx}:${cat.id}`;
+              const cs = categoryScore(cat, p.answers);
+              const answered = cat.questions.filter(q=>typeof p.answers[q.id]==="number").length;
+              const wMap = weightsFor ? weightsFor(p.isMuslima) : null;
+              const wDisp = (wMap && typeof wMap[cat.id]==="number") ? wMap[cat.id] : cat.weight;
+              return (
+                <div key={cat.id} style={ST.catBlock}>
+                  <button style={ST.catHeader} onClick={()=>toggle(k)}>
+                    <span style={{...ST.catDot,background:cat.color}}/>
+                    <span style={ST.catName}>{cat.name}</span>
+                    <span style={ST.catWeight}>{wDisp}%</span>
+                    <span style={ST.catProgress}>{answered}/{cat.questions.length}</span>
+                    <span style={ST.catVal}>{cs!==null?cs.toFixed(1):"–"}</span>
+                    <span style={ST.chevron}>{open[k]?"▾":"▸"}</span>
+                  </button>
+                  {open[k] && (
+                    <div style={ST.questionList}>
+                      {cat.questions.map((q)=>(
+                        <QuestionRow key={q.id} q={q} color={cat.color}
+                          value={p.answers[q.id]} onChange={(v)=>setAnswer(idx,q.id,v)} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            <div style={ST.gutRow}>
+              <div style={ST.catRowHead}>
+                <span style={{...ST.catDot,background:"#444"}}/>
+                <span style={ST.catName}>{L(TRANS.UI.gut, CURRENT_LANG)}</span>
+                <span style={ST.catVal}>{p.gut}</span>
+              </div>
+              <input type="range" min="0" max="10" step="1" value={p.gut}
+                onChange={(e)=>updatePartner(idx,{gut:Number(e.target.value)})}
+                style={{...ST.slider,accentColor:"#444"}}/>
+              <div style={ST.gutHint}>{L(TRANS.UI.gutHint, CURRENT_LANG)}</div>
+            </div>
+          </div>
+        );
+      })}
+      <button onClick={addPartner} style={ST.addBtn}>{L(TRANS.UI.addPerson, CURRENT_LANG)}</button>
+    </div>
+  );
+}
+
+function QuestionRow({ q, color, value, onChange }) {
+  if (q.type === "yesno") {
+    return (
+      <div style={ST.qRow}>
+        <div style={ST.qText}>{q.text}</div>
+        <div style={ST.yesnoRow}>
+          {[["no",0],["partiallyLabel",5],["yes",10]].map(([lk,v])=>(
+            <button key={lk} onClick={()=>onChange(v)}
+              style={{...ST.yesnoBtn,...(value===v?{background:color,color:"#fff",borderColor:color}:{})}}>{L(TRANS.UI[lk],CURRENT_LANG)}</button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={ST.qRow}>
+      <div style={ST.qTextRow}>
+        <span style={ST.qText}>{q.text}</span>
+        <span style={ST.qVal}>{typeof value==="number"?value:"–"}</span>
+      </div>
+      <input type="range" min="0" max="10" step="1" value={value === undefined || value === null ? 5 : value}
+        onChange={(e)=>onChange(Number(e.target.value))}
+        style={{...ST.slider,accentColor:color}}/>
+    </div>
+  );
+}
+
+/* ══════════════ Radar ══════════════ */
+function RadarView({ partners, wish }) {
+  const [mode, setMode] = useState("single");
+  const [selA, setSelA] = useState(0);
+  const [selB, setSelB] = useState(1);
+  if (partners.length===0) return <div style={ST.empty}>Erfasse zuerst mindestens eine Person im Tab ‚Bewerten".</div>;
+
+  const pA = partners[Math.min(selA,partners.length-1)];
+  const axisCats = buildCategories(pA.isMuslima);
+  const seriesFor = (p,color,label,dashed) => ({ label,color,dashed,
+    values: axisCats.map((cat)=>{ const s=categoryScore(cat,p.answers); return s===null?0:s; }) });
+
+  const series = [seriesFor(pA,"#1f7a5c",pA.name,false)];
+  if (mode==="wish") series.push({ label:L(TRANS.UI.wishProfile,CURRENT_LANG), color:"#c0563b", dashed:true,
+    values: axisCats.map((cat)=> typeof wish[cat.id]==="number"?wish[cat.id]:0) });
+  if (mode==="compare" && partners.length>1) {
+    const pB = partners[Math.min(selB,partners.length-1)];
+    series.push(seriesFor(pB,"#3b6ec0",pB.name,false));
+  }
+
+  return (
+    <div>
+      <div style={ST.modeRow}>
+        {[["single",L(TRANS.UI.radar_single,CURRENT_LANG)],["wish",L(TRANS.UI.radar_wish,CURRENT_LANG)],["compare",L(TRANS.UI.radar_compare,CURRENT_LANG)]].map(([id,l])=>(
+          <button key={id} onClick={()=>setMode(id)} style={{...ST.modeBtn,...(mode===id?ST.modeActive:{})}}>{l}</button>
+        ))}
+      </div>
+      <div style={ST.selectRow}>
+        <label style={ST.selLabel}>{L(TRANS.UI.personA,CURRENT_LANG)}{" "}
+          <select value={selA} onChange={(e)=>setSelA(Number(e.target.value))} style={ST.select}>
+            {partners.map((p,i)=><option key={i} value={i}>{p.name}</option>)}
+          </select>
+        </label>
+        {mode==="compare" && partners.length>1 && (
+          <label style={ST.selLabel}>{L(TRANS.UI.personB,CURRENT_LANG)}{" "}
+            <select value={selB} onChange={(e)=>setSelB(Number(e.target.value))} style={ST.select}>
+              {partners.map((p,i)=><option key={i} value={i}>{p.name}</option>)}
+            </select>
+          </label>
+        )}
+      </div>
+      <RadarChart axisCats={axisCats} series={series} />
+      <div style={ST.legend}>
+        {series.map((s,i)=>(
+          <div key={i} style={ST.legendItem}>
+            <span style={{...ST.legendDot,background:s.color,...(s.dashed?{opacity:0.6}:{})}}/>
+            <span>{s.label}{s.dashed?L(TRANS.UI.target,CURRENT_LANG):""}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RadarChart({ axisCats, series }) {
+  const size=360, cx=size/2, cy=size/2, R=size/2-60, n=axisCats.length;
+  const angle=(i)=>(Math.PI*2*i)/n - Math.PI/2;
+  const point=(i,val)=>{ const r=(val/10)*R; return [cx+r*Math.cos(angle(i)), cy+r*Math.sin(angle(i))]; };
+  return (
+    <div style={{display:"flex",justifyContent:"center"}}>
+      <svg viewBox={`0 0 ${size} ${size}`} style={{width:"100%",maxWidth:420}} role="img" aria-label="Wabennetz der Kategorien">
+        {[2,4,6,8,10].map((rv)=>(
+          <polygon key={rv} points={axisCats.map((_,i)=>point(i,rv).join(",")).join(" ")} fill="none" stroke="#e5ded2" strokeWidth="1"/>
+        ))}
+        {axisCats.map((_,i)=>{ const [x,y]=point(i,10); return <line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e5ded2" strokeWidth="1"/>; })}
+        {series.map((s,si)=>(
+          <polygon key={si} points={s.values.map((v,i)=>point(i,v).join(",")).join(" ")}
+            fill={s.color} fillOpacity={s.dashed?0.05:0.16} stroke={s.color} strokeWidth="2"
+            strokeDasharray={s.dashed?"5 4":"0"} strokeLinejoin="round"/>
+        ))}
+        {series.map((s,si)=> s.values.map((v,i)=>{ const [x,y]=point(i,v); return <circle key={si+"-"+i} cx={x} cy={y} r="2.5" fill={s.color}/>; }))}
+        {axisCats.map((cat,i)=>{
+          const [x,y]=point(i,11.4);
+          const anchor = Math.abs(x-cx)<12 ? "middle" : x<cx ? "end" : "start";
+          return <text key={i} x={x} y={y} fontSize="9" fill="#5c574f" textAnchor={anchor} dominantBaseline="middle">{cat.short}</text>;
+        })}
+      </svg>
+    </div>
+  );
+}
+
+/* ══════════════ Ranking ══════════════ */
+function Ranking({ partners, weightsFor }) {
+  if (partners.length===0) return <div style={ST.empty}>{L(TRANS.UI.rank_empty, CURRENT_LANG)}</div>;
+  const ranked = partners.map((p,i)=>({...p,idx:i,score:totalScore(p, weightsFor ? weightsFor(p.isMuslima) : null),failed:failedDealbreakers(p)})).sort((a,b)=>b.score-a.score);
+  const maxScore = Math.max(...ranked.map(r=>r.score),1);
+  return (
+    <div>
+      {ranked.map((r,pos)=>{
+        const gutScaled=(r.gut/10)*100, gap=Math.abs(r.score-gutScaled), below=r.failed.length>0;
+        return (
+          <div key={r.idx} style={{...ST.rankCard,...(below?ST.rankCardMuted:{})}}>
+            <div style={ST.rankHead}>
+              <span style={ST.rankPos}>{pos+1}</span>
+              <span style={ST.rankName}>{r.name}</span>
+              <span style={ST.rankScore}>{r.score.toFixed(1)}</span>
+            </div>
+            {below && <div style={ST.rankWarn}>{L(TRANS.UI.belowThreshold,CURRENT_LANG)}{r.failed.length}{L(TRANS.UI.dbNotMet,CURRENT_LANG)}</div>}
+            <div style={ST.barTrack}><div style={{...ST.barFill,width:`${(r.score/maxScore)*100}%`}}/></div>
+            <div style={ST.compareRow}><span>{L(TRANS.UI.points,CURRENT_LANG)}: {r.score.toFixed(0)}</span><span>{L(TRANS.UI.gutShort,CURRENT_LANG)}: {gutScaled.toFixed(0)}</span></div>
+            {gap>=20 && <div style={ST.gapNote}>{L(TRANS.UI.gap,CURRENT_LANG)} ({gap.toFixed(0)}). {L(TRANS.UI.gapTail,CURRENT_LANG)}</div>}
+          </div>
+        );
+      })}
+      <div style={ST.interpretBox}>
+        {L(TRANS.UI.rankInterpret, CURRENT_LANG)}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ Wunschprofil (mit Drill-down) ══════════════ */
+function Wunsch({ wish, setWish }) {
+  const [open, setOpen] = useState({});
+  const cats = buildCategories(true);
+  const toggle = (id) => setOpen((s)=>({...s,[id]:!s[id]}));
+  const setCat = (id,v)=>setWish({...wish,[id]:v});
+  const setSub = (id,v)=>setWish({...wish,["sub_"+id]:v});
+  return (
+    <div>
+      <p style={ST.wishIntro}>{L(TRANS.UI.wishIntro, CURRENT_LANG)}</p>
+      {cats.map((cat)=>(
+        <div key={cat.id} style={ST.wishCat}>
+          <div style={ST.catRowHead}>
+            <span style={{...ST.catDot,background:cat.color}}/>
+            <span style={ST.catName}>{cat.name}</span>
+            <button onClick={()=>toggle(cat.id)} style={ST.wishDrill}>{open[cat.id]?"▾":"▸"}</button>
+            <span style={ST.catVal}>{typeof wish[cat.id]==="number"?wish[cat.id]:"–"}</span>
+          </div>
+          <input type="range" min="0" max="10" step="1" value={(wish[cat.id] === undefined || wish[cat.id] === null ? 5 : wish[cat.id])}
+            onChange={(e)=>setCat(cat.id,Number(e.target.value))} style={{...ST.slider,accentColor:cat.color}}/>
+          {open[cat.id] && (
+            <div style={ST.wishSubList}>
+              {cat.questions.map((q)=>(
+                <div key={q.id} style={ST.wishSubRow}>
+                  <div style={ST.qTextRow}>
+                    <span style={ST.qTextSm}>{q.text}</span>
+                    <span style={ST.qVal}>{typeof wish["sub_"+q.id]==="number"?wish["sub_"+q.id]:"–"}</span>
+                  </div>
+                  <input type="range" min="0" max="10" step="1" value={(wish["sub_"+q.id] === undefined || wish["sub_"+q.id] === null ? 5 : wish["sub_"+q.id])}
+                    onChange={(e)=>setSub(q.id,Number(e.target.value))} style={{...ST.slider,accentColor:cat.color}}/>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ══════════════ Kriterien ══════════════ */
+function Kriterien({ weightsMuslima, weightsNicht }) {
+  const [muslima,setMuslima]=useState(true);
+  const weights = muslima ? weightsMuslima : weightsNicht;
+  const cats=buildCategories(muslima).map((c)=>({...c, w: (weights && typeof weights[c.id]==="number") ? weights[c.id] : c.weight}))
+    .sort((a,b)=>b.w-a.w);
+  const sum=cats.reduce((a,c)=>a+c.w,0);
+  return (
+    <div>
+      <div style={ST.dealInfo}>
+        <strong>{L(TRANS.UI.dealHeader, CURRENT_LANG)}</strong>{L(TRANS.UI.dealOverride, CURRENT_LANG)}
+        <ul style={ST.critList}>{dealbreakers(CURRENT_LANG).map(d=><li key={d.id} style={ST.critItem}>{d.text}</li>)}</ul>
+      </div>
+      <div style={ST.toggleRow}>
+        <span style={ST.toggleLabel}>{L(TRANS.UI.view, CURRENT_LANG)}</span>
+        <div style={ST.dbButtons}>
+          {[["muslima",true],["nichtmuslima",false]].map(([lk,v])=>(
+            <button key={lk} onClick={()=>setMuslima(v)} style={{...ST.dbBtn,...(muslima===v?ST.toggleActive:{})}}>{L(TRANS.UI[lk],CURRENT_LANG)}</button>
+          ))}
+        </div>
+      </div>
+      <div style={ST.sumRow}>{L(TRANS.UI.sumWeights,CURRENT_LANG)} {sum}%{L(TRANS.UI.sortedByWeight,CURRENT_LANG)}</div>
+      {cats.map((cat)=>(
+        <div key={cat.id} style={ST.critCard}>
+          <div style={ST.critHead}>
+            <span style={{...ST.catDot,background:cat.color}}/>
+            <span style={ST.critName}>{cat.name}</span>
+            <span style={ST.critWeight}>{cat.w}%</span>
+          </div>
+          <p style={ST.critNote}>{cat.note}</p>
+          <ul style={ST.critList}>
+            {cat.questions.map((q)=>(
+              <li key={q.id} style={ST.critItem}>{q.text} <span style={ST.qType}>({q.type==="scale"?L(TRANS.UI.scaleLabel,CURRENT_LANG):L(TRANS.UI.yesnoLabel,CURRENT_LANG)})</span></li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ══════════════ Gewichtung: Presets + Fragebogen ══════════════ */
+function Gewichtung({ presetId, setPresetId, qAnswers, setQAnswers, weightsMuslima, weightsNicht }) {
+  const [showQ, setShowQ] = useState(false);
+  const [view, setView] = useState(true); // true = Muslima-Ansicht
+  const weights = view ? weightsMuslima : weightsNicht;
+  const cats = buildCategories(view).map((c)=>({...c, w:(typeof weights[c.id]==="number"?weights[c.id]:c.weight)})).sort((a,b)=>b.w-a.w);
+  const setQ = (id,v)=>setQAnswers({...qAnswers,[id]:v});
+  return (
+    <div>
+      <p style={ST.wishIntro}>
+        {L(TRANS.UI.gewIntro, CURRENT_LANG)}
+      </p>
+      <div style={ST.qWhenBox}>
+        <div style={ST.qWhenTitle}>{L(TRANS.UI.qWhenTitle, CURRENT_LANG)}</div>
+        <div style={ST.qWhenText}>{L(TRANS.UI.qWhenText, CURRENT_LANG)}</div>
+      </div>
+
+      <div style={ST.presetGrid}>
+        {presets(CURRENT_LANG).map((p)=>(
+          <button key={p.id} onClick={()=>setPresetId(p.id)}
+            style={{...ST.presetCard,...(presetId===p.id?ST.presetActive:{})}}>
+            <div style={ST.presetName}>{p.name}{presetId===p.id?"  ✓":""}</div>
+            <div style={ST.presetDesc}>{p.desc}</div>
+          </button>
+        ))}
+      </div>
+
+      <button style={ST.qToggle} onClick={()=>setShowQ(!showQ)}>
+        {showQ ? L(TRANS.UI.qToggleClose,CURRENT_LANG) : L(TRANS.UI.qToggleOpen,CURRENT_LANG)}
+      </button>
+
+      {showQ && (
+        <div style={ST.qBox}>
+          <p style={ST.qIntro}>{L(TRANS.UI.qBoxIntro, CURRENT_LANG)}</p>
+          {QUESTIONNAIRE.map((qDef)=>{ const q = { id:qDef.id, text:L(TRANS.QUEST[qDef.id].text,CURRENT_LANG), left:L(TRANS.QUEST[qDef.id].left,CURRENT_LANG), right:L(TRANS.QUEST[qDef.id].right,CURRENT_LANG) };
+            const v = typeof qAnswers[q.id]==="number" ? qAnswers[q.id] : 0.5;
+            return (
+              <div key={q.id} style={ST.qItem}>
+                <div style={ST.qLabel}>{q.text}</div>
+                <input type="range" min="0" max="1" step="0.1" value={v}
+                  onChange={(e)=>setQ(q.id,Number(e.target.value))}
+                  style={{...ST.slider,accentColor:"#1f7a5c"}}/>
+                <div style={ST.qEnds}><span>{q.left}</span><span>{q.right}</span></div>
+              </div>
+            );
+          })}
+          <button style={ST.qReset} onClick={()=>setQAnswers({})}>{L(TRANS.UI.qReset, CURRENT_LANG)}</button>
+        </div>
+      )}
+
+      <div style={ST.weightPreview}>
+        <div style={ST.toggleRow}>
+          <span style={ST.toggleLabel}>{L(TRANS.UI.previewLabel, CURRENT_LANG)}</span>
+          <div style={ST.dbButtons}>
+            {[["muslima",true],["nichtmuslima",false]].map(([lk,val])=>(
+              <button key={lk} onClick={()=>setView(val)} style={{...ST.dbBtn,...(view===val?ST.toggleActive:{})}}>{L(TRANS.UI[lk],CURRENT_LANG)}</button>
+            ))}
+          </div>
+        </div>
+        <div style={ST.sumRow}>{L(TRANS.UI.resultWeights, CURRENT_LANG)}</div>
+        {cats.map((cat)=>(
+          <div key={cat.id} style={ST.wBar}>
+            <span style={ST.wBarName}>{cat.name}</span>
+            <div style={ST.wBarTrack}><div style={{...ST.wBarFill,width:`${cat.w*3}%`,background:cat.color}}/></div>
+            <span style={ST.wBarVal}>{cat.w}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════ Styles ══════════════ */
+const ST = {
+  page:{minHeight:"100vh",background:"#f6f4ef",fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",color:"#2a2724"},
+  container:{maxWidth:1080,margin:"0 auto",padding:"32px 24px 64px"},
+  topRow:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:12,flexWrap:"wrap"},
+  langWrap:{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4},
+  langHint:{fontSize:11,color:"#a89f90"},
+  langSwitch:{display:"flex",gap:4},
+  langBtn:{padding:"5px 10px",borderRadius:7,border:"1px solid #ddd7cc",background:"#fff",color:"#5c574f",fontSize:12,fontWeight:700,cursor:"pointer"},
+  langBtnActive:{background:"#1f7a5c",color:"#fff",borderColor:"#1f7a5c"},
+  qWhenBox:{background:"#eef4f1",border:"1px solid #d5e8de",borderRadius:12,padding:"12px 14px",marginBottom:16},
+  qWhenTitle:{fontSize:13,fontWeight:700,color:"#1f7a5c",marginBottom:5},
+  qWhenText:{fontSize:12.5,lineHeight:1.55,color:"#4a5a52"},
+  twoCol:{display:"grid",gridTemplateColumns:"1fr",gap:20},
+  header:{marginBottom:24},
+  kicker:{fontSize:12,letterSpacing:"0.12em",textTransform:"uppercase",color:"#1f7a5c",fontWeight:600,marginBottom:8},
+  h1:{fontSize:30,fontWeight:700,margin:"0 0 10px",lineHeight:1.15},
+  sub:{fontSize:15,lineHeight:1.6,color:"#5c574f",margin:0},
+  tabs:{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"},
+  tab:{padding:"9px 15px",borderRadius:999,border:"1px solid #ddd7cc",background:"#fff",color:"#5c574f",fontSize:13.5,cursor:"pointer",fontWeight:500},
+  tabActive:{background:"#1f7a5c",color:"#fff",borderColor:"#1f7a5c"},
+  empty:{padding:"40px 20px",textAlign:"center",color:"#8a847a",background:"#fff",borderRadius:14,border:"1px dashed #ddd7cc",fontSize:15},
+  card:{background:"#fff",borderRadius:16,padding:20,marginBottom:16,boxShadow:"0 1px 3px rgba(0,0,0,0.05)",border:"1px solid #eee8dd"},
+  cardHead:{display:"flex",alignItems:"center",gap:10,marginBottom:14},
+  nameInput:{flex:1,fontSize:18,fontWeight:600,border:"none",borderBottom:"2px solid #eee8dd",padding:"4px 2px",background:"transparent",color:"#2a2724",outline:"none"},
+  removeBtn:{fontSize:12,color:"#b0392b",background:"none",border:"none",cursor:"pointer",textDecoration:"underline"},
+  toggleRow:{display:"flex",alignItems:"center",gap:12,marginBottom:14,padding:"10px 12px",background:"#faf8f3",borderRadius:10,border:"1px solid #eee8dd"},
+  toggleLabel:{fontSize:14,fontWeight:600,color:"#5c574f"},
+  toggleActive:{background:"#3b6ec0",color:"#fff",borderColor:"#3b6ec0"},
+  dealBox:{background:"#fbf6f0",border:"1px solid #ecdcc9",borderRadius:12,padding:"12px 14px",marginBottom:14},
+  dealTitle:{fontSize:13,fontWeight:700,color:"#8a5a1f",marginBottom:10,textTransform:"uppercase",letterSpacing:"0.04em"},
+  dealRow:{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px dashed #f0e4d4"},
+  dealText:{fontSize:13,lineHeight:1.45,color:"#3d3833",flex:1},
+  dbButtons:{display:"flex",gap:8},
+  dbBtn:{padding:"6px 18px",borderRadius:8,border:"1px solid #cdd8d1",background:"#fff",cursor:"pointer",fontSize:14,fontWeight:500,color:"#5c574f"},
+  dbBtnSm:{padding:"5px 12px",borderRadius:7,border:"1px solid #d8cdbd",background:"#fff",cursor:"pointer",fontSize:13,fontWeight:500,color:"#5c574f",flexShrink:0},
+  dbYes:{background:"#1f7a5c",color:"#fff",borderColor:"#1f7a5c"},
+  dbNo:{background:"#b0392b",color:"#fff",borderColor:"#b0392b"},
+  dbWarn:{fontSize:13,color:"#b0392b",background:"#fbecea",padding:"8px 12px",borderRadius:8,marginTop:10,lineHeight:1.5},
+  catBlock:{marginBottom:8,border:"1px solid #eee8dd",borderRadius:12,overflow:"hidden"},
+  catHeader:{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:"#fbfaf6",border:"none",cursor:"pointer",textAlign:"left"},
+  catDot:{width:10,height:10,borderRadius:"50%",flexShrink:0},
+  catName:{fontSize:14,fontWeight:600,flex:1,color:"#2a2724"},
+  catWeight:{fontSize:12,color:"#8a847a",fontWeight:600},
+  catProgress:{fontSize:11,color:"#a89f90",fontWeight:600,minWidth:26,textAlign:"right"},
+  catVal:{fontSize:14,fontWeight:700,minWidth:30,textAlign:"right",color:"#1f7a5c"},
+  chevron:{fontSize:12,color:"#8a847a",width:14,textAlign:"center"},
+  questionList:{padding:"6px 14px 14px",background:"#fff"},
+  qRow:{padding:"12px 0",borderBottom:"1px dashed #f0ece2"},
+  qTextRow:{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:10,marginBottom:6},
+  qText:{fontSize:13.5,lineHeight:1.5,color:"#3d3833"},
+  qTextSm:{fontSize:12.5,lineHeight:1.45,color:"#5c574f"},
+  qVal:{fontSize:14,fontWeight:700,color:"#2a2724",flexShrink:0},
+  yesnoRow:{display:"flex",gap:6,marginTop:8},
+  yesnoBtn:{flex:1,padding:"7px 4px",borderRadius:8,border:"1px solid #ddd7cc",background:"#fff",cursor:"pointer",fontSize:13,fontWeight:500,color:"#5c574f"},
+  slider:{width:"100%",cursor:"pointer"},
+  catRowHead:{display:"flex",alignItems:"center",gap:8,marginBottom:6},
+  gutRow:{marginTop:14,paddingTop:16,borderTop:"1px dashed #eee8dd"},
+  gutHint:{fontSize:12,color:"#8a847a",marginTop:6,lineHeight:1.5},
+  addBtn:{width:"100%",padding:"14px",borderRadius:12,border:"1.5px dashed #1f7a5c",background:"#f0f7f3",color:"#1f7a5c",fontSize:15,fontWeight:600,cursor:"pointer",marginTop:4},
+  modeRow:{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"},
+  modeBtn:{padding:"8px 14px",borderRadius:999,border:"1px solid #ddd7cc",background:"#fff",color:"#5c574f",fontSize:13,cursor:"pointer",fontWeight:500},
+  modeActive:{background:"#1f7a5c",color:"#fff",borderColor:"#1f7a5c"},
+  selectRow:{display:"flex",gap:16,marginBottom:8,flexWrap:"wrap"},
+  selLabel:{fontSize:13,color:"#5c574f",fontWeight:500},
+  select:{fontSize:13,padding:"5px 8px",borderRadius:8,border:"1px solid #ddd7cc",background:"#fff",color:"#2a2724"},
+  legend:{display:"flex",gap:18,justifyContent:"center",marginTop:10,flexWrap:"wrap"},
+  legendItem:{display:"flex",alignItems:"center",gap:6,fontSize:13,color:"#5c574f"},
+  legendDot:{width:12,height:12,borderRadius:3},
+  rankCard:{background:"#fff",borderRadius:14,padding:18,marginBottom:12,border:"1px solid #eee8dd"},
+  rankCardMuted:{opacity:0.62},
+  rankHead:{display:"flex",alignItems:"center",gap:12,marginBottom:10},
+  rankPos:{width:30,height:30,borderRadius:"50%",background:"#1f7a5c",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:15,flexShrink:0},
+  rankName:{flex:1,fontSize:17,fontWeight:600},
+  rankScore:{fontSize:22,fontWeight:700,color:"#1f7a5c"},
+  rankWarn:{fontSize:12,color:"#b0392b",fontWeight:600,marginBottom:8},
+  barTrack:{height:8,background:"#eee8dd",borderRadius:999,overflow:"hidden",marginBottom:10},
+  barFill:{height:"100%",background:"linear-gradient(90deg,#1f7a5c,#3ba57e)",borderRadius:999},
+  compareRow:{display:"flex",justifyContent:"space-between",fontSize:13,color:"#5c574f",fontWeight:500},
+  gapNote:{marginTop:10,fontSize:13,lineHeight:1.5,color:"#8a5a1f",background:"#fbf3e6",padding:"8px 12px",borderRadius:8},
+  interpretBox:{marginTop:18,fontSize:14,lineHeight:1.65,color:"#5c574f",background:"#fff",padding:18,borderRadius:14,border:"1px solid #eee8dd"},
+  wishIntro:{fontSize:14,lineHeight:1.6,color:"#5c574f",marginBottom:16},
+  wishCat:{marginBottom:14,background:"#fff",padding:14,borderRadius:12,border:"1px solid #eee8dd"},
+  wishDrill:{fontSize:12,color:"#3b6ec0",background:"none",border:"none",cursor:"pointer",fontWeight:600,padding:0},
+  wishSubList:{marginTop:12,paddingTop:10,borderTop:"1px dashed #eee8dd"},
+  wishSubRow:{marginBottom:10},
+  sumRow:{fontSize:13,color:"#8a847a",marginBottom:14,fontWeight:600},
+  dealInfo:{background:"#fbf6f0",border:"1px solid #ecdcc9",borderRadius:12,padding:16,marginBottom:16,fontSize:13.5,color:"#5c4a33",lineHeight:1.5},
+  critCard:{background:"#fff",borderRadius:14,padding:18,marginBottom:12,border:"1px solid #eee8dd"},
+  critHead:{display:"flex",alignItems:"center",gap:8,marginBottom:8},
+  critName:{fontSize:16,fontWeight:600,flex:1},
+  critWeight:{fontSize:14,fontWeight:700,color:"#1f7a5c"},
+  critNote:{fontSize:13,lineHeight:1.6,color:"#5c574f",margin:"0 0 10px"},
+  critList:{margin:"6px 0 0",paddingLeft:18},
+  critItem:{fontSize:13,lineHeight:1.7,color:"#5c574f"},
+  qType:{fontSize:11,color:"#a89f90"},
+  footer:{marginTop:28,fontSize:12,lineHeight:1.6,color:"#8a847a",textAlign:"center",borderTop:"1px solid #eee8dd",paddingTop:18},
+  presetGrid:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10,marginBottom:16},
+  presetCard:{textAlign:"left",padding:"14px 16px",borderRadius:12,border:"1px solid #eee8dd",background:"#fff",cursor:"pointer"},
+  presetActive:{border:"2px solid #1f7a5c",background:"#f0f7f3"},
+  presetName:{fontSize:14,fontWeight:700,color:"#2a2724",marginBottom:4},
+  presetDesc:{fontSize:12,lineHeight:1.5,color:"#5c574f"},
+  qToggle:{width:"100%",padding:"11px",borderRadius:10,border:"1px solid #ddd7cc",background:"#faf8f3",color:"#5c574f",fontSize:14,fontWeight:600,cursor:"pointer",marginBottom:12},
+  qBox:{background:"#fff",border:"1px solid #eee8dd",borderRadius:12,padding:16,marginBottom:16},
+  qIntro:{fontSize:13,lineHeight:1.55,color:"#5c574f",margin:"0 0 14px"},
+  qItem:{marginBottom:16},
+  qLabel:{fontSize:13.5,fontWeight:500,color:"#3d3833",marginBottom:8},
+  qEnds:{display:"flex",justifyContent:"space-between",fontSize:11,color:"#8a847a",marginTop:2},
+  qReset:{marginTop:4,padding:"7px 14px",borderRadius:8,border:"1px solid #ddd7cc",background:"#fff",color:"#8a5a1f",fontSize:12.5,fontWeight:600,cursor:"pointer"},
+  weightPreview:{background:"#fbfaf6",border:"1px solid #eee8dd",borderRadius:12,padding:16},
+  wBar:{display:"flex",alignItems:"center",gap:10,marginBottom:7},
+  wBarName:{fontSize:12.5,color:"#3d3833",width:150,flexShrink:0},
+  wBarTrack:{flex:1,height:10,background:"#eee8dd",borderRadius:999,overflow:"hidden"},
+  wBarFill:{height:"100%",borderRadius:999},
+  wBarVal:{fontSize:12.5,fontWeight:700,color:"#2a2724",width:34,textAlign:"right"},
+  backupRow:{display:"flex",gap:10,marginTop:14,flexWrap:"wrap"},
+  backupBtn:{padding:"8px 14px",borderRadius:8,border:"1px solid #1f7a5c",background:"#1f7a5c",color:"#fff",fontSize:13,fontWeight:600,cursor:"pointer"},
+  backupBtnAlt:{padding:"8px 14px",borderRadius:8,border:"1px solid #1f7a5c",background:"#fff",color:"#1f7a5c",fontSize:13,fontWeight:600,cursor:"pointer",display:"inline-flex",alignItems:"center"},
+};
+
+
+const rootEl = document.getElementById("root");
+try {
+  if (typeof React === "undefined" || typeof ReactDOM === "undefined") {
+    window.__libError && window.__libError("React/ReactDOM");
+  } else {
+    ReactDOM.createRoot(rootEl).render(<App />);
+  }
+} catch (err) {
+  rootEl.innerHTML = '<div style="max-width:640px;margin:60px auto;padding:24px;font-family:sans-serif;color:#5c574f;background:#fff;border:1px solid #eee8dd;border-radius:14px;line-height:1.6"><h2 style="color:#b0392b;margin-top:0">Fehler beim Start</h2><pre style="white-space:pre-wrap;color:#8a5a1f;background:#fbf3e6;padding:12px;border-radius:8px">' + (err && err.message ? err.message : err) + '</pre></div>';
+}
+
+</script>
+<script>
+  (function(){
+    function boot(){
+      if (typeof Babel === "undefined" || typeof React === "undefined" || typeof ReactDOM === "undefined") {
+        // Bibliotheken noch nicht da -> kurz warten und erneut versuchen
+        return setTimeout(boot, 50);
+      }
+      try {
+        var src = document.getElementById("app-source").textContent;
+        var compiled = Babel.transform(src, { presets: [["react", { runtime: "classic" }]] }).code;
+        // eslint-disable-next-line no-new-func
+        (new Function(compiled))();
+      } catch (err) {
+        var r = document.getElementById("root");
+        if (r) {
+          r.innerHTML = '<div style="max-width:640px;margin:60px auto;padding:24px;font-family:sans-serif;color:#5c574f;background:#fff;border:1px solid #eee8dd;border-radius:14px;line-height:1.6"><h2 style="color:#b0392b;margin-top:0">Fehler beim Start</h2><pre style="white-space:pre-wrap;color:#8a5a1f;background:#fbf3e6;padding:12px;border-radius:8px">' + (err && err.message ? err.message : err) + '</pre></div>';
+        }
+      }
+    }
+    boot();
+  })();
+</script>
+</body>
+</html>
